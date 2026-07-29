@@ -32,7 +32,11 @@ type BudgetInput = {
   categoryId: string;
   month: number;
   year: number;
+  title?: string | null;
+  description?: string | null;
   limitAmount: number;
+  unitCost?: number | null;
+  quantityLimit?: number | null;
   alertAt?: number;
 };
 

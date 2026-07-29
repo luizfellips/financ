@@ -76,6 +76,7 @@ export const reportService = {
     const budgets = await budgetService.list(userId, { month, year });
     const budgetUtilization = budgets.map((b) => ({
       id: b.id,
+      title: b.title,
       categoryName: b.category.name,
       categoryColor: b.category.color,
       limitAmount: b.limitAmount,

@@ -45,12 +45,15 @@ export function mapAccount<T extends {
 
 export function mapBudget<T extends {
   limitAmount: Decimal;
+  unitCost?: Decimal | null;
   createdAt: Date;
   updatedAt: Date;
 }>(budget: T) {
   return {
     ...budget,
     limitAmount: decimalToNumber(budget.limitAmount),
+    unitCost:
+      budget.unitCost == null ? null : decimalToNumber(budget.unitCost),
     createdAt: budget.createdAt.toISOString(),
     updatedAt: budget.updatedAt.toISOString(),
   };

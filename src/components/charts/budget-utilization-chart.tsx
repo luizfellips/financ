@@ -13,6 +13,7 @@ import {
 
 type BudgetBar = {
   categoryName: string;
+  title?: string | null;
   percent: number;
   alertAt: number;
   categoryColor: string;
@@ -27,11 +28,16 @@ export function BudgetUtilizationChart({ data }: { data: BudgetBar[] }) {
     );
   }
 
+  const chartData = data.map((item) => ({
+    ...item,
+    label: item.title?.trim() || item.categoryName,
+  }));
+
   return (
     <div className="h-[280px] w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
-          data={data}
+          data={chartData}
           layout="vertical"
           margin={{ top: 8, right: 16, left: 8, bottom: 0 }}
         >
@@ -46,7 +52,7 @@ export function BudgetUtilizationChart({ data }: { data: BudgetBar[] }) {
           />
           <YAxis
             type="category"
-            dataKey="categoryName"
+            dataKey="label"
             width={100}
             tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
             axisLine={false}
@@ -62,9 +68,9 @@ export function BudgetUtilizationChart({ data }: { data: BudgetBar[] }) {
             formatter={(value) => `${Number(value ?? 0).toFixed(0)}%`}
           />
           <Bar dataKey="percent" name="Utilização" radius={[0, 4, 4, 0]}>
-            {data.map((entry) => (
+            {chartData.map((entry) => (
               <Cell
-                key={entry.categoryName}
+                key={`${entry.label}-${entry.categoryName}`}
                 fill={
                   entry.percent >= 100
                     ? "var(--destructive)"

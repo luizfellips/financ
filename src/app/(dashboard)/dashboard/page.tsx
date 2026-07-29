@@ -275,7 +275,7 @@ export default function DashboardPage() {
               budgetProgress.slice(0, 5).map((budget) => (
                 <div key={budget.id} className="space-y-1">
                   <StatProgress
-                    label={budget.categoryName}
+                    label={budget.title?.trim() || budget.categoryName}
                     current={budget.spent}
                     target={budget.limitAmount}
                   />

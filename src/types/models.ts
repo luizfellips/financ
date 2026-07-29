@@ -86,13 +86,20 @@ export type Budget = {
   categoryId: string;
   month: number;
   year: number;
+  title: string | null;
+  description: string | null;
   limitAmount: number;
+  unitCost: number | null;
+  quantityLimit: number | null;
   alertAt: number;
   createdAt: string;
   updatedAt: string;
   spent: number;
   remaining: number;
   percent: number;
+  estimatedQuantity: number | null;
+  quantityRemaining: number | null;
+  potentialSavings: number | null;
   category: Pick<Category, "id" | "name" | "color" | "icon" | "type">;
 };
 
@@ -181,6 +188,7 @@ export type DashboardOverview = {
   }>;
   budgetProgress: Array<{
     id: string;
+    title: string | null;
     categoryName: string;
     categoryColor: string;
     limitAmount: number;
@@ -273,6 +281,7 @@ export type ReportsData = {
   }>;
   budgetUtilization: Array<{
     id: string;
+    title: string | null;
     categoryName: string;
     categoryColor: string;
     limitAmount: number;

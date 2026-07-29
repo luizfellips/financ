@@ -10,7 +10,11 @@ export type CreateBudgetData = {
   categoryId: string;
   month: number;
   year: number;
+  title?: string | null;
+  description?: string | null;
   limitAmount: Decimal | number;
+  unitCost?: Decimal | number | null;
+  quantityLimit?: number | null;
   alertAt: number;
 };
 
@@ -71,7 +75,11 @@ export const budgetRepository = {
         categoryId: data.categoryId,
         month: data.month,
         year: data.year,
+        title: data.title ?? null,
+        description: data.description ?? null,
         limitAmount: data.limitAmount,
+        unitCost: data.unitCost ?? null,
+        quantityLimit: data.quantityLimit ?? null,
         alertAt: data.alertAt,
       },
       include: {
@@ -100,8 +108,16 @@ export const budgetRepository = {
           : {}),
         ...(data.month !== undefined ? { month: data.month } : {}),
         ...(data.year !== undefined ? { year: data.year } : {}),
+        ...(data.title !== undefined ? { title: data.title } : {}),
+        ...(data.description !== undefined
+          ? { description: data.description }
+          : {}),
         ...(data.limitAmount !== undefined
           ? { limitAmount: data.limitAmount }
+          : {}),
+        ...(data.unitCost !== undefined ? { unitCost: data.unitCost } : {}),
+        ...(data.quantityLimit !== undefined
+          ? { quantityLimit: data.quantityLimit }
           : {}),
         ...(data.alertAt !== undefined ? { alertAt: data.alertAt } : {}),
       },

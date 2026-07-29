@@ -16,6 +16,51 @@ import type { budgetSchema } from "@/server/validation/schemas";
 
 type BudgetInput = z.infer<typeof budgetSchema>;
 
+function normalizeOptionalText(value: string | null | undefined) {
+  if (value === undefined) return undefined;
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
+function budgetDisplayName(
+  title: string | null | undefined,
+  categoryName: string,
+) {
+  return title?.trim() || categoryName;
+}
+
+function computeUnitMetrics(
+  spent: number,
+  limit: number,
+  unitCost: number | null,
+  quantityLimit: number | null,
+) {
+  if (unitCost == null || unitCost <= 0) {
+    return {
+      estimatedQuantity: null as number | null,
+      quantityRemaining: null as number | null,
+      potentialSavings: null as number | null,
+    };
+  }
+
+  const estimatedQuantity = Math.round((spent / unitCost) * 10) / 10;
+  const quantityRemaining =
+    quantityLimit != null
+      ? Math.round((quantityLimit - estimatedQuantity) * 10) / 10
+      : null;
+  const overUnits =
+    quantityLimit != null
+      ? Math.max(0, estimatedQuantity - quantityLimit)
+      : Math.max(0, spent - limit) / unitCost;
+  const potentialSavings = Math.round(overUnits * unitCost * 100) / 100;
+
+  return {
+    estimatedQuantity,
+    quantityRemaining,
+    potentialSavings,
+  };
+}
+
 async function enrichBudget(
   userId: string,
   budget: NonNullable<Awaited<ReturnType<typeof budgetRepository.findById>>>,
@@ -31,13 +76,21 @@ async function enrichBudget(
   const limit = Number(budget.limitAmount);
   const remaining = limit - spent;
   const percent = clampPercent(limit > 0 ? (spent / limit) * 100 : 0);
+  const mapped = mapBudget(budget);
+  const unitMetrics = computeUnitMetrics(
+    spent,
+    limit,
+    mapped.unitCost,
+    budget.quantityLimit,
+  );
 
   return {
-    ...mapBudget(budget),
+    ...mapped,
     category: budget.category,
     spent,
     remaining,
     percent,
+    ...unitMetrics,
   };
 }
 
@@ -50,6 +103,7 @@ async function maybeNotifyBudgetThreshold(
 
   const since = new Date();
   since.setHours(0, 0, 0, 0);
+  const label = budgetDisplayName(enriched.title, enriched.category.name);
 
   if (enriched.percent >= 100) {
     const existing = await notificationRepository.findRecentByTypeAndMeta(
@@ -62,7 +116,7 @@ async function maybeNotifyBudgetThreshold(
       await notificationRepository.create(userId, {
         type: "BUDGET_EXCEEDED",
         title: "Orçamento excedido",
-        message: `O orçamento de ${enriched.category.name} foi excedido (${enriched.percent.toFixed(0)}%).`,
+        message: `O orçamento de ${label} foi excedido (${enriched.percent.toFixed(0)}%).`,
         metadata: {
           budgetId: enriched.id,
           categoryId: enriched.categoryId,
@@ -86,7 +140,7 @@ async function maybeNotifyBudgetThreshold(
       await notificationRepository.create(userId, {
         type: "BUDGET_WARNING",
         title: "Alerta de orçamento",
-        message: `O orçamento de ${enriched.category.name} atingiu ${enriched.percent.toFixed(0)}% do limite.`,
+        message: `O orçamento de ${label} atingiu ${enriched.percent.toFixed(0)}% do limite.`,
         metadata: {
           budgetId: enriched.id,
           categoryId: enriched.categoryId,
@@ -97,6 +151,11 @@ async function maybeNotifyBudgetThreshold(
       });
     }
   }
+}
+
+function toOptionalDecimal(value: number | null | undefined) {
+  if (value == null) return null;
+  return toDecimal(value);
 }
 
 export const budgetService = {
@@ -150,7 +209,11 @@ export const budgetService = {
       categoryId: input.categoryId,
       month: input.month,
       year: input.year,
+      title: normalizeOptionalText(input.title) ?? null,
+      description: normalizeOptionalText(input.description) ?? null,
       limitAmount: toDecimal(input.limitAmount),
+      unitCost: toOptionalDecimal(input.unitCost ?? null),
+      quantityLimit: input.quantityLimit ?? null,
       alertAt: input.alertAt,
     });
 
@@ -208,8 +271,20 @@ export const budgetService = {
         : {}),
       ...(input.month !== undefined ? { month: input.month } : {}),
       ...(input.year !== undefined ? { year: input.year } : {}),
+      ...(input.title !== undefined
+        ? { title: normalizeOptionalText(input.title) ?? null }
+        : {}),
+      ...(input.description !== undefined
+        ? { description: normalizeOptionalText(input.description) ?? null }
+        : {}),
       ...(input.limitAmount !== undefined
         ? { limitAmount: toDecimal(input.limitAmount) }
+        : {}),
+      ...(input.unitCost !== undefined
+        ? { unitCost: toOptionalDecimal(input.unitCost) }
+        : {}),
+      ...(input.quantityLimit !== undefined
+        ? { quantityLimit: input.quantityLimit }
         : {}),
       ...(input.alertAt !== undefined ? { alertAt: input.alertAt } : {}),
     });

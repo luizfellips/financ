@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import * as React from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import { MoneyInput } from "@/components/shared/money-input";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -24,16 +25,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useCategories } from "@/hooks/use-categories";
 import { MONTH_LABELS } from "@/lib/labels";
 import type { Budget } from "@/types/models";
+import { formatCurrency } from "@/utils/currency";
 import { getCurrentMonthYear } from "@/utils/date";
 
 const schema = z.object({
+  title: z.string().max(100).optional(),
+  description: z.string().max(500).optional(),
   categoryId: z.string().min(1, "Selecione uma categoria"),
   month: z.number().int().min(1).max(12),
   year: z.number().int().min(2000).max(2100),
   limitAmount: z.number().positive("Limite deve ser positivo"),
+  unitCost: z.number().positive().nullable().optional(),
+  quantityLimit: z.number().int().positive().nullable().optional(),
   alertAt: z.number().int().min(1).max(100),
 });
 
@@ -54,26 +61,102 @@ export function BudgetForm({ budget, onSubmit, onCancel }: BudgetFormProps) {
   const form = useForm<BudgetFormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      title: budget?.title ?? "",
+      description: budget?.description ?? "",
       categoryId: budget?.categoryId ?? "",
       month: budget?.month ?? month,
       year: budget?.year ?? year,
       limitAmount: budget?.limitAmount ?? 0,
+      unitCost: budget?.unitCost ?? null,
+      quantityLimit: budget?.quantityLimit ?? null,
       alertAt: budget?.alertAt ?? 80,
     },
   });
 
+  const unitCost = useWatch({ control: form.control, name: "unitCost" });
+  const quantityLimit = useWatch({
+    control: form.control,
+    name: "quantityLimit",
+  });
+
+  React.useEffect(() => {
+    if (
+      unitCost != null &&
+      unitCost > 0 &&
+      quantityLimit != null &&
+      quantityLimit > 0
+    ) {
+      const nextLimit = Math.round(unitCost * quantityLimit * 100) / 100;
+      form.setValue("limitAmount", nextLimit, { shouldValidate: true });
+    }
+  }, [unitCost, quantityLimit, form]);
+
   async function handleSubmit(values: BudgetFormValues) {
     setPending(true);
     try {
-      await onSubmit(values);
+      await onSubmit({
+        ...values,
+        title: values.title?.trim() || undefined,
+        description: values.description?.trim() || undefined,
+        unitCost: values.unitCost ?? null,
+        quantityLimit: values.quantityLimit ?? null,
+      });
     } finally {
       setPending(false);
     }
   }
 
+  const suggestedLimit =
+    unitCost != null &&
+    unitCost > 0 &&
+    quantityLimit != null &&
+    quantityLimit > 0
+      ? unitCost * quantityLimit
+      : null;
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Título</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="Ex.: Limite de energéticos"
+                  {...field}
+                  value={field.value ?? ""}
+                />
+              </FormControl>
+              <FormDescription>
+                Opcional. Se vazio, usa o nome da categoria.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Descrição</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Ex.: No máximo 10 latas por mês para cortar gasto impulsivo"
+                  rows={3}
+                  {...field}
+                  value={field.value ?? ""}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <FormField
           control={form.control}
           name="categoryId"
@@ -156,6 +239,76 @@ export function BudgetForm({ budget, onSubmit, onCancel }: BudgetFormProps) {
           />
         </div>
 
+        <div className="space-y-3 rounded-lg border border-border/60 p-3">
+          <div>
+            <p className="text-sm font-medium">Controle por unidade</p>
+            <p className="text-xs text-muted-foreground">
+              Opcional. Ex.: custo da lata × quantidade máxima no mês.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="unitCost"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Custo unitário</FormLabel>
+                  <FormControl>
+                    <MoneyInput
+                      value={field.value ?? 0}
+                      onValueChange={(value) =>
+                        field.onChange(value > 0 ? value : null)
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="quantityLimit"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Qtd. máxima</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      step={1}
+                      placeholder="Ex.: 10"
+                      value={field.value ?? ""}
+                      onChange={(event) => {
+                        const raw = event.target.value;
+                        if (raw === "") {
+                          field.onChange(null);
+                          return;
+                        }
+                        const next = Number(raw);
+                        field.onChange(
+                          Number.isFinite(next) && next > 0
+                            ? Math.trunc(next)
+                            : null,
+                        );
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          {suggestedLimit != null ? (
+            <p className="text-xs text-muted-foreground">
+              Limite sugerido:{" "}
+              <span className="font-medium text-foreground">
+                {formatCurrency(suggestedLimit)}
+              </span>{" "}
+              ({formatCurrency(unitCost!)} × {quantityLimit})
+            </p>
+          ) : null}
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
             control={form.control}
@@ -169,6 +322,9 @@ export function BudgetForm({ budget, onSubmit, onCancel }: BudgetFormProps) {
                     onValueChange={field.onChange}
                   />
                 </FormControl>
+                <FormDescription>
+                  Preenchido automaticamente se informar custo e quantidade.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

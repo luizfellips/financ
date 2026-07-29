@@ -162,6 +162,7 @@ export const dashboardService = {
       upcomingBills: upcomingBills.slice(0, 10),
       budgetProgress: budgets.map((b) => ({
         id: b.id,
+        title: b.title,
         categoryName: b.category.name,
         categoryColor: b.category.color,
         limitAmount: b.limitAmount,

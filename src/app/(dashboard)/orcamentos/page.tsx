@@ -53,6 +53,10 @@ import type { Budget } from "@/types/models";
 import { formatCurrency } from "@/utils/currency";
 import { getCurrentMonthYear } from "@/utils/date";
 
+function budgetLabel(budget: Budget) {
+  return budget.title?.trim() || budget.category.name;
+}
+
 function BudgetsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -94,7 +98,7 @@ function BudgetsPageContent() {
     <div className="space-y-6">
       <PageHeader
         title="Orçamentos"
-        description="Limites mensais por categoria de despesa"
+        description="Limites mensais por categoria, com título e controle por unidade"
         actions={
           <Button
             onClick={() => {
@@ -165,6 +169,7 @@ function BudgetsPageContent() {
           {budgets.map((budget) => {
             const exceeded = budget.percent >= 100;
             const warning = !exceeded && budget.percent >= budget.alertAt;
+            const hasUnits = budget.unitCost != null && budget.unitCost > 0;
             return (
               <Card
                 key={budget.id}
@@ -180,12 +185,20 @@ function BudgetsPageContent() {
                         className="h-2.5 w-2.5 rounded-full"
                         style={{ backgroundColor: budget.category.color }}
                       />
-                      {budget.category.name}
+                      {budgetLabel(budget)}
                     </CardTitle>
                     <CardDescription>
+                      {budget.title?.trim()
+                        ? `${budget.category.name} · `
+                        : null}
                       Limite {formatCurrency(budget.limitAmount)} · Alerta em{" "}
                       {budget.alertAt}%
                     </CardDescription>
+                    {budget.description ? (
+                      <p className="pt-1 text-sm text-muted-foreground">
+                        {budget.description}
+                      </p>
+                    ) : null}
                   </div>
                   <div className="flex items-center gap-2">
                     {exceeded || warning ? (
@@ -230,6 +243,36 @@ function BudgetsPageContent() {
                     current={budget.spent}
                     target={budget.limitAmount}
                   />
+                  {hasUnits ? (
+                    <div className="rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                      <p>
+                        ~{budget.estimatedQuantity?.toLocaleString("pt-BR")} un.
+                        × {formatCurrency(budget.unitCost!)} ={" "}
+                        <span className="font-medium text-foreground">
+                          {formatCurrency(budget.spent)}
+                        </span>
+                        {budget.quantityLimit != null ? (
+                          <>
+                            {" "}
+                            · limite {budget.quantityLimit} un.
+                          </>
+                        ) : null}
+                      </p>
+                      {budget.potentialSavings != null &&
+                      budget.potentialSavings > 0 ? (
+                        <p className="mt-1 text-amber-700 dark:text-amber-400">
+                          Economia se respeitar o limite:{" "}
+                          {formatCurrency(budget.potentialSavings)}
+                        </p>
+                      ) : budget.quantityRemaining != null &&
+                        budget.quantityRemaining > 0 ? (
+                        <p className="mt-1">
+                          Ainda cabem ~{budget.quantityRemaining.toLocaleString("pt-BR")}{" "}
+                          un. ({formatCurrency(budget.remaining)})
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>
                       Restante:{" "}
@@ -262,7 +305,7 @@ function BudgetsPageContent() {
           if (!open) setEditing(null);
         }}
       >
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {editing ? "Editar orçamento" : "Novo orçamento"}
@@ -278,6 +321,10 @@ function BudgetsPageContent() {
                 alertAt: 80,
                 limitAmount: 0,
                 categoryId: "",
+                title: null,
+                description: null,
+                unitCost: null,
+                quantityLimit: null,
               } as Budget)
             }
             onCancel={() => {

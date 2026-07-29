@@ -32,6 +32,50 @@ describe("budget calculation", () => {
   });
 });
 
+describe("budget unit metrics", () => {
+  function computeUnitMetrics(
+    spent: number,
+    limit: number,
+    unitCost: number | null,
+    quantityLimit: number | null,
+  ) {
+    if (unitCost == null || unitCost <= 0) {
+      return {
+        estimatedQuantity: null as number | null,
+        quantityRemaining: null as number | null,
+        potentialSavings: null as number | null,
+      };
+    }
+
+    const estimatedQuantity = Math.round((spent / unitCost) * 10) / 10;
+    const quantityRemaining =
+      quantityLimit != null
+        ? Math.round((quantityLimit - estimatedQuantity) * 10) / 10
+        : null;
+    const overUnits =
+      quantityLimit != null
+        ? Math.max(0, estimatedQuantity - quantityLimit)
+        : Math.max(0, spent - limit) / unitCost;
+    const potentialSavings = Math.round(overUnits * unitCost * 100) / 100;
+
+    return { estimatedQuantity, quantityRemaining, potentialSavings };
+  }
+
+  it("estimates quantity and savings for unit-based budgets", () => {
+    const result = computeUnitMetrics(120, 80, 8, 10);
+    expect(result.estimatedQuantity).toBe(15);
+    expect(result.quantityRemaining).toBe(-5);
+    expect(result.potentialSavings).toBe(40);
+  });
+
+  it("shows remaining units under the limit", () => {
+    const result = computeUnitMetrics(40, 80, 8, 10);
+    expect(result.estimatedQuantity).toBe(5);
+    expect(result.quantityRemaining).toBe(5);
+    expect(result.potentialSavings).toBe(0);
+  });
+});
+
 describe("installment split", () => {
   function splitInstallments(totalAmount: number, installments: number) {
     const base = Math.floor((totalAmount / installments) * 100) / 100;

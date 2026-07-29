@@ -350,7 +350,11 @@ export const importExportService = {
         categoryId: b.categoryId,
         month: b.month,
         year: b.year,
+        title: b.title,
+        description: b.description,
         limitAmount: decimalToNumber(b.limitAmount),
+        unitCost: b.unitCost == null ? null : decimalToNumber(b.unitCost),
+        quantityLimit: b.quantityLimit,
         alertAt: b.alertAt,
       })),
       goals: goals.map((g) => ({
@@ -483,7 +487,12 @@ export const importExportService = {
             categoryId,
             month: budget.month,
             year: budget.year,
+            title: budget.title ?? null,
+            description: budget.description ?? null,
             limitAmount: toDecimal(budget.limitAmount),
+            unitCost:
+              budget.unitCost == null ? null : toDecimal(budget.unitCost),
+            quantityLimit: budget.quantityLimit ?? null,
             alertAt: budget.alertAt,
           },
         });

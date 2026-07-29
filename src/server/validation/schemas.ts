@@ -116,7 +116,25 @@ export const budgetSchema = z.object({
   categoryId: z.string().cuid(),
   month: z.coerce.number().int().min(1).max(12),
   year: z.coerce.number().int().min(2000).max(2100),
+  title: z.string().trim().max(100).nullish(),
+  description: z.string().trim().max(500).nullish(),
   limitAmount: z.coerce.number().positive().finite(),
+  unitCost: z.preprocess(
+    (value) => {
+      if (value === undefined) return undefined;
+      if (value === "" || value === null) return null;
+      return value;
+    },
+    z.union([z.coerce.number().positive().finite(), z.null()]).optional(),
+  ),
+  quantityLimit: z.preprocess(
+    (value) => {
+      if (value === undefined) return undefined;
+      if (value === "" || value === null) return null;
+      return value;
+    },
+    z.union([z.coerce.number().int().positive(), z.null()]).optional(),
+  ),
   alertAt: z.coerce.number().int().min(1).max(100).default(80),
 });
 
@@ -216,7 +234,11 @@ export const backupBudgetSchema = z.object({
   categoryId: z.string().min(1).max(64),
   month: z.number().int().min(1).max(12),
   year: z.number().int().min(2000).max(2100),
+  title: z.string().trim().max(100).nullable().optional(),
+  description: z.string().trim().max(500).nullable().optional(),
   limitAmount: z.number().positive().finite(),
+  unitCost: z.number().positive().finite().nullable().optional(),
+  quantityLimit: z.number().int().positive().nullable().optional(),
   alertAt: z.number().int().min(1).max(100).default(80),
 });
 

@@ -189,15 +189,19 @@ model Transaction {
 }
 
 model Budget {
-  id         String   @id @default(cuid())
-  userId     String
-  categoryId String
-  month      Int
-  year       Int
-  limitAmount Decimal @db.Decimal(14, 2)
-  alertAt    Int      @default(80)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id            String   @id @default(cuid())
+  userId        String
+  categoryId    String
+  month         Int
+  year          Int
+  title         String?
+  description   String?
+  limitAmount   Decimal  @db.Decimal(14, 2)
+  unitCost      Decimal? @db.Decimal(14, 2)
+  quantityLimit Int?
+  alertAt       Int      @default(80)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
