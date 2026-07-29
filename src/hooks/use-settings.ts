@@ -134,3 +134,30 @@ export function useRestore() {
     },
   });
 }
+
+export function usePurgeAllData() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: {
+      confirmPhrase: string;
+      confirmEmail: string;
+      confirmFinal: string;
+    }) => {
+      const { data } = await apiClient<{ purged: boolean; message: string }>(
+        "/api/account/purge",
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+        },
+      );
+      return data;
+    },
+    onSuccess: (data) => {
+      void queryClient.invalidateQueries();
+      toast.success(data.message || "Dados apagados com sucesso");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao apagar dados");
+    },
+  });
+}
