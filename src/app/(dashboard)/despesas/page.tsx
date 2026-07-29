@@ -37,12 +37,11 @@ import {
 import { PAYMENT_METHOD_LABELS } from "@/lib/labels";
 import type { Transaction, TransactionFilters } from "@/types/models";
 import { formatCurrency } from "@/utils/currency";
-import { formatDate, getCurrentMonthYear } from "@/utils/date";
+import { formatDate } from "@/utils/date";
 
 function ExpensesPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { month, year } = getCurrentMonthYear();
 
   const [filters, setFilters] = React.useState<TransactionFilters>({
     page: 1,
@@ -50,8 +49,6 @@ function ExpensesPageContent() {
     sortBy: "date",
     sortOrder: "desc",
     type: "EXPENSE",
-    month,
-    year,
     recurring: "all",
     search: "",
   });

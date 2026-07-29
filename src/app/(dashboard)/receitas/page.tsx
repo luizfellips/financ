@@ -33,7 +33,6 @@ import {
   useIncomes,
   useUpdateTransaction,
 } from "@/hooks/use-transactions";
-import { getCurrentMonthYear } from "@/utils/date";
 import type { Transaction, TransactionFilters } from "@/types/models";
 import { formatCurrency } from "@/utils/currency";
 import { formatDate } from "@/utils/date";
@@ -41,7 +40,6 @@ import { formatDate } from "@/utils/date";
 function IncomesPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { month, year } = getCurrentMonthYear();
 
   const [filters, setFilters] = React.useState<TransactionFilters>({
     page: 1,
@@ -49,8 +47,6 @@ function IncomesPageContent() {
     sortBy: "date",
     sortOrder: "desc",
     type: "INCOME",
-    month,
-    year,
     recurring: "all",
     search: "",
   });

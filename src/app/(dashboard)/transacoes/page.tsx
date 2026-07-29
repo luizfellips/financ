@@ -36,7 +36,6 @@ import {
   useTransactions,
   useUpdateTransaction,
 } from "@/hooks/use-transactions";
-import { getCurrentMonthYear } from "@/utils/date";
 import { PAYMENT_METHOD_LABELS } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import type { Transaction, TransactionFilters } from "@/types/models";
@@ -46,7 +45,6 @@ import { formatDate } from "@/utils/date";
 function TransactionsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { month, year } = getCurrentMonthYear();
 
   const [filters, setFilters] = React.useState<TransactionFilters>({
     page: 1,
@@ -54,8 +52,6 @@ function TransactionsPageContent() {
     sortBy: "date",
     sortOrder: "desc",
     type: "ALL",
-    month,
-    year,
     recurring: "all",
     search: "",
   });

@@ -57,8 +57,8 @@ function BudgetsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const current = getCurrentMonthYear();
-  const [month, setMonth] = React.useState(current.month);
-  const [year, setYear] = React.useState(current.year);
+  const [month, setMonth] = React.useState<number | undefined>(undefined);
+  const [year, setYear] = React.useState<number | undefined>(undefined);
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Budget | null>(null);
   const [deleting, setDeleting] = React.useState<Budget | null>(null);
@@ -110,13 +110,16 @@ function BudgetsPageContent() {
 
       <div className="flex flex-wrap gap-3">
         <Select
-          value={String(month)}
-          onValueChange={(value) => setMonth(Number(value))}
+          value={month ? String(month) : "all"}
+          onValueChange={(value) =>
+            setMonth(value === "all" ? undefined : Number(value))
+          }
         >
           <SelectTrigger className="w-[160px]">
-            <SelectValue />
+            <SelectValue placeholder="Mês" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="all">Todos os meses</SelectItem>
             {MONTH_LABELS.map((label, index) => (
               <SelectItem key={label} value={String(index + 1)}>
                 {label}
@@ -125,13 +128,16 @@ function BudgetsPageContent() {
           </SelectContent>
         </Select>
         <Select
-          value={String(year)}
-          onValueChange={(value) => setYear(Number(value))}
+          value={year ? String(year) : "all"}
+          onValueChange={(value) =>
+            setYear(value === "all" ? undefined : Number(value))
+          }
         >
           <SelectTrigger className="w-[120px]">
-            <SelectValue />
+            <SelectValue placeholder="Ano" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="all">Todos os anos</SelectItem>
             {years.map((y) => (
               <SelectItem key={y} value={String(y)}>
                 {y}
@@ -145,7 +151,7 @@ function BudgetsPageContent() {
         <LoadingSkeleton variant="list" rows={4} />
       ) : budgets.length === 0 ? (
         <EmptyState
-          title="Nenhum orçamento neste período"
+          title="Nenhum orçamento encontrado"
           description="Defina um limite para acompanhar seus gastos."
           action={
             <Button onClick={() => setDialogOpen(true)}>
