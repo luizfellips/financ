@@ -7,11 +7,22 @@ function resolveAuthSecret(): string | undefined {
   return process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
 }
 
+/** True while `next build` collects page data (NODE_ENV=production, no runtime secrets). */
+function isNextProductionBuild(): boolean {
+  return (
+    process.env.NEXT_PHASE === "phase-production-build" ||
+    process.env.npm_lifecycle_event === "build"
+  );
+}
+
 /**
- * Validates auth secrets. Throws in production when misconfigured;
+ * Validates auth secrets. Throws in production runtime when misconfigured;
+ * skips hard failure during `next build` (Docker/CI often omit secrets);
  * warns in development for placeholder/short secrets.
  */
 export function assertAuthSecret(): void {
+  if (isNextProductionBuild()) return;
+
   const secret = resolveAuthSecret();
   const isProd = process.env.NODE_ENV === "production";
 
