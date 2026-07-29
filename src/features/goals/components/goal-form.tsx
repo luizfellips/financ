@@ -121,7 +121,7 @@ export function GoalForm({ goal, onSubmit, onCancel }: GoalFormProps) {
           control={form.control}
           name="deadline"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="sm:max-w-xs">
               <FormLabel>Prazo (opcional)</FormLabel>
               <FormControl>
                 <Input
@@ -135,69 +135,71 @@ export function GoalForm({ goal, onSubmit, onCancel }: GoalFormProps) {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="color"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Cor</FormLabel>
-              <div className="flex flex-wrap gap-2">
-                {CATEGORY_COLORS.map((swatch) => (
-                  <button
-                    key={swatch}
-                    type="button"
-                    className={cn(
-                      "h-7 w-7 rounded-full border-2",
-                      field.value === swatch
-                        ? "border-foreground scale-110"
-                        : "border-transparent",
-                    )}
-                    style={{ backgroundColor: swatch }}
-                    onClick={() => field.onChange(swatch)}
-                    aria-label={swatch}
-                  />
-                ))}
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="icon"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Ícone</FormLabel>
-              <div className="grid grid-cols-8 gap-2">
-                {CATEGORY_ICONS.map((iconName) => {
-                  const Icon =
-                    (LucideIcons as unknown as Record<
-                      string,
-                      LucideIcons.LucideIcon
-                    >)[iconName] ?? LucideIcons.Target;
-                  return (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="color"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Cor</FormLabel>
+                <div className="flex flex-wrap gap-2">
+                  {CATEGORY_COLORS.map((swatch) => (
                     <button
-                      key={iconName}
+                      key={swatch}
                       type="button"
                       className={cn(
-                        "flex h-9 w-9 items-center justify-center rounded-md border",
-                        field.value === iconName
-                          ? "border-foreground bg-muted"
-                          : "border-border hover:bg-muted/60",
+                        "h-7 w-7 rounded-full border-2",
+                        field.value === swatch
+                          ? "border-foreground scale-110"
+                          : "border-transparent",
                       )}
-                      onClick={() => field.onChange(iconName)}
-                      aria-label={iconName}
-                    >
-                      <Icon className="h-4 w-4" />
-                    </button>
-                  );
-                })}
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                      style={{ backgroundColor: swatch }}
+                      onClick={() => field.onChange(swatch)}
+                      aria-label={swatch}
+                    />
+                  ))}
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="icon"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Ícone</FormLabel>
+                <div className="grid grid-cols-6 gap-2 sm:grid-cols-8">
+                  {CATEGORY_ICONS.map((iconName) => {
+                    const Icon =
+                      (LucideIcons as unknown as Record<
+                        string,
+                        LucideIcons.LucideIcon
+                      >)[iconName] ?? LucideIcons.Target;
+                    return (
+                      <button
+                        key={iconName}
+                        type="button"
+                        className={cn(
+                          "flex h-9 w-9 items-center justify-center rounded-md border",
+                          field.value === iconName
+                            ? "border-foreground bg-muted"
+                            : "border-border hover:bg-muted/60",
+                        )}
+                        onClick={() => field.onChange(iconName)}
+                        aria-label={iconName}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </button>
+                    );
+                  })}
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <div className="flex justify-end gap-2 pt-2">
           {onCancel ? (

@@ -161,53 +161,68 @@ export function TransactionForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         {!lockedType ? (
-          <FormField
-            control={form.control}
-            name="type"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tipo</FormLabel>
-                <Select
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    form.setValue("categoryId", "");
-                  }}
-                  value={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Tipo" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {(Object.keys(TRANSACTION_TYPE_LABELS) as TransactionType[]).map(
-                      (key) => (
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,10rem)_1fr]">
+            <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo</FormLabel>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      form.setValue("categoryId", "");
+                    }}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Tipo" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {(
+                        Object.keys(TRANSACTION_TYPE_LABELS) as TransactionType[]
+                      ).map((key) => (
                         <SelectItem key={key} value={key}>
                           {TRANSACTION_TYPE_LABELS[key]}
                         </SelectItem>
-                      ),
-                    )}
-                  </SelectContent>
-                </Select>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Título</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex.: Mercado, Salário..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        ) : (
+          <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Título</FormLabel>
+                <FormControl>
+                  <Input placeholder="Ex.: Mercado, Salário..." {...field} />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-        ) : null}
-
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Título</FormLabel>
-              <FormControl>
-                <Input placeholder="Ex.: Mercado, Salário..." {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
@@ -241,7 +256,7 @@ export function TransactionForm({
           />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-3">
           <FormField
             control={form.control}
             name="accountId"
@@ -290,9 +305,6 @@ export function TransactionForm({
               </FormItem>
             )}
           />
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
           <FormField
             control={form.control}
             name="paymentMethod"
@@ -319,6 +331,9 @@ export function TransactionForm({
               </FormItem>
             )}
           />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
           <FormField
             control={form.control}
             name="recurrence"
@@ -345,35 +360,35 @@ export function TransactionForm({
               </FormItem>
             )}
           />
-        </div>
 
-        {showInstallments && type === "EXPENSE" ? (
-          <FormField
-            control={form.control}
-            name="installmentTotal"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Parcelas (opcional)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={48}
-                    placeholder="Ex.: 12"
-                    value={field.value ?? ""}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      field.onChange(
-                        value === "" ? null : Number.parseInt(value, 10),
-                      );
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        ) : null}
+          {showInstallments && type === "EXPENSE" ? (
+            <FormField
+              control={form.control}
+              name="installmentTotal"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Parcelas (opcional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={48}
+                      placeholder="Ex.: 12"
+                      value={field.value ?? ""}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        field.onChange(
+                          value === "" ? null : Number.parseInt(value, 10),
+                        );
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ) : null}
+        </div>
 
         <FormField
           control={form.control}

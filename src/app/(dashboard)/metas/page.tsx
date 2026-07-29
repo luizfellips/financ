@@ -268,7 +268,7 @@ function GoalsPageContent() {
           if (!open) setEditing(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>{editing ? "Editar meta" : "Nova meta"}</DialogTitle>
           </DialogHeader>
@@ -291,7 +291,7 @@ function GoalsPageContent() {
           if (!open) setContributing(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               Contribuir{contributing ? ` — ${contributing.name}` : ""}

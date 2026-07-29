@@ -256,7 +256,7 @@ function BudgetsPageContent() {
           if (!open) setEditing(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {editing ? "Editar orçamento" : "Novo orçamento"}

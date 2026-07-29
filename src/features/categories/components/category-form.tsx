@@ -104,114 +104,118 @@ export function CategoryForm({
           </div>
         </div>
 
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nome</FormLabel>
-              <FormControl>
-                <Input placeholder="Ex.: Alimentação" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tipo</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                value={field.value}
-                disabled={Boolean(category?.isSystem)}
-              >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nome</FormLabel>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <Input placeholder="Ex.: Alimentação" {...field} />
                 </FormControl>
-                <SelectContent>
-                  {(Object.keys(TRANSACTION_TYPE_LABELS) as TransactionType[]).map(
-                    (key) => (
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tipo</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  disabled={Boolean(category?.isSystem)}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {(
+                      Object.keys(TRANSACTION_TYPE_LABELS) as TransactionType[]
+                    ).map((key) => (
                       <SelectItem key={key} value={key}>
                         {TRANSACTION_TYPE_LABELS[key]}
                       </SelectItem>
-                    ),
-                  )}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
-        <FormField
-          control={form.control}
-          name="color"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Cor</FormLabel>
-              <div className="flex flex-wrap gap-2">
-                {CATEGORY_COLORS.map((swatch) => (
-                  <button
-                    key={swatch}
-                    type="button"
-                    aria-label={`Cor ${swatch}`}
-                    className={cn(
-                      "h-7 w-7 rounded-full border-2 transition",
-                      field.value === swatch
-                        ? "border-foreground scale-110"
-                        : "border-transparent",
-                    )}
-                    style={{ backgroundColor: swatch }}
-                    onClick={() => field.onChange(swatch)}
-                  />
-                ))}
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="icon"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Ícone</FormLabel>
-              <div className="grid grid-cols-8 gap-2">
-                {CATEGORY_ICONS.map((iconName) => {
-                  const Icon =
-                    (LucideIcons as unknown as Record<
-                      string,
-                      LucideIcons.LucideIcon
-                    >)[iconName] ?? LucideIcons.Tag;
-                  return (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="color"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Cor</FormLabel>
+                <div className="flex flex-wrap gap-2">
+                  {CATEGORY_COLORS.map((swatch) => (
                     <button
-                      key={iconName}
+                      key={swatch}
                       type="button"
+                      aria-label={`Cor ${swatch}`}
                       className={cn(
-                        "flex h-9 w-9 items-center justify-center rounded-md border transition",
-                        field.value === iconName
-                          ? "border-foreground bg-muted"
-                          : "border-border hover:bg-muted/60",
+                        "h-7 w-7 rounded-full border-2 transition",
+                        field.value === swatch
+                          ? "border-foreground scale-110"
+                          : "border-transparent",
                       )}
-                      onClick={() => field.onChange(iconName)}
-                      aria-label={iconName}
-                    >
-                      <Icon className="h-4 w-4" />
-                    </button>
-                  );
-                })}
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                      style={{ backgroundColor: swatch }}
+                      onClick={() => field.onChange(swatch)}
+                    />
+                  ))}
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="icon"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Ícone</FormLabel>
+                <div className="grid grid-cols-6 gap-2 sm:grid-cols-8">
+                  {CATEGORY_ICONS.map((iconName) => {
+                    const Icon =
+                      (LucideIcons as unknown as Record<
+                        string,
+                        LucideIcons.LucideIcon
+                      >)[iconName] ?? LucideIcons.Tag;
+                    return (
+                      <button
+                        key={iconName}
+                        type="button"
+                        className={cn(
+                          "flex h-9 w-9 items-center justify-center rounded-md border transition",
+                          field.value === iconName
+                            ? "border-foreground bg-muted"
+                            : "border-border hover:bg-muted/60",
+                        )}
+                        onClick={() => field.onChange(iconName)}
+                        aria-label={iconName}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </button>
+                    );
+                  })}
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <div className="flex justify-end gap-2 pt-2">
           {onCancel ? (

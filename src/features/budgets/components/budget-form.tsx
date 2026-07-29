@@ -156,41 +156,46 @@ export function BudgetForm({ budget, onSubmit, onCancel }: BudgetFormProps) {
           />
         </div>
 
-        <FormField
-          control={form.control}
-          name="limitAmount"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Limite</FormLabel>
-              <FormControl>
-                <MoneyInput value={field.value} onValueChange={field.onChange} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="limitAmount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Limite</FormLabel>
+                <FormControl>
+                  <MoneyInput
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="alertAt"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Alerta em (%)</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={field.value}
-                  onChange={(event) =>
-                    field.onChange(Number(event.target.value))
-                  }
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="alertAt"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Alerta em (%)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={field.value}
+                    onChange={(event) =>
+                      field.onChange(Number(event.target.value))
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <div className="flex justify-end gap-2 pt-2">
           {onCancel ? (

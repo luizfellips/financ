@@ -237,7 +237,7 @@ function ExpensesPageContent() {
           if (!open) setEditing(null);
         }}
       >
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>
               {editing ? "Editar despesa" : "Nova despesa"}

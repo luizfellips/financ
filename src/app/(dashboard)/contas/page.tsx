@@ -227,7 +227,7 @@ function AccountsPageContent() {
           if (!open) setEditing(null);
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {editing ? "Editar conta" : "Nova conta"}
