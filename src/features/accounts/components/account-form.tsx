@@ -176,7 +176,7 @@ export function AccountForm({
               </FormControl>
               <FormDescription>
                 {account
-                  ? "Base do saldo. O saldo atual = inicial + receitas − despesas."
+                  ? "Base do saldo. O saldo do mês = inicial + receitas − despesas até o fim do período."
                   : "Informe o saldo que a conta tem hoje."}
               </FormDescription>
               <FormMessage />

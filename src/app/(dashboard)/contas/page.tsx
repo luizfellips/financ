@@ -8,6 +8,10 @@ import * as React from "react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import {
+  MonthYearPicker,
+  type MonthYearValue,
+} from "@/components/shared/month-year-picker";
 import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,10 +42,11 @@ import {
   useCreateAccount,
   useUpdateAccount,
 } from "@/hooks/use-accounts";
-import { ACCOUNT_TYPE_LABELS } from "@/lib/labels";
+import { ACCOUNT_TYPE_LABELS, MONTH_LABELS } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import type { Account } from "@/types/models";
 import { formatCurrency } from "@/utils/currency";
+import { getCurrentMonthYear } from "@/utils/date";
 
 function AccountsPageContent() {
   const router = useRouter();
@@ -49,10 +54,15 @@ function AccountsPageContent() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Account | null>(null);
   const [archiving, setArchiving] = React.useState<Account | null>(null);
+  const [period, setPeriod] = React.useState<MonthYearValue>(getCurrentMonthYear);
 
-  const { data: accounts = [], isLoading } = useAccounts();
+  const { data: accounts = [], isLoading, isFetching } = useAccounts(
+    period.month,
+    period.year,
+  );
   const createMutation = useCreateAccount();
   const updateMutation = useUpdateAccount();
+  const monthLabel = MONTH_LABELS[period.month - 1] ?? "";
 
   React.useEffect(() => {
     if (searchParams.get("nova") === "1") {
@@ -81,25 +91,30 @@ function AccountsPageContent() {
     <div className="space-y-6">
       <PageHeader
         title="Contas"
-        description="Cadastre contas e acompanhe o saldo atual de cada uma"
+        description={`Saldo de cada conta até o fim de ${monthLabel}`}
         actions={
-          <Button
-            onClick={() => {
-              setEditing(null);
-              setDialogOpen(true);
-            }}
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            Nova conta
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <MonthYearPicker value={period} onChange={setPeriod} />
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setDialogOpen(true);
+              }}
+            >
+              <Plus className="mr-1.5 h-4 w-4" />
+              Nova conta
+            </Button>
+          </div>
         }
       />
 
       {!isLoading && accounts.length > 0 ? (
-        <Card>
+        <Card className={cn(isFetching && "opacity-70 transition-opacity")}>
           <CardContent className="flex items-center justify-between py-4">
             <div>
-              <p className="text-sm text-muted-foreground">Saldo total</p>
+              <p className="text-sm text-muted-foreground">
+                Saldo total em {monthLabel}
+              </p>
               <p className="text-2xl font-semibold tabular-nums tracking-tight">
                 {formatCurrency(totalBalance)}
               </p>
@@ -126,7 +141,12 @@ function AccountsPageContent() {
           }
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div
+          className={cn(
+            "grid gap-4 sm:grid-cols-2 xl:grid-cols-3",
+            isFetching && "opacity-70 transition-opacity",
+          )}
+        >
           {accounts.map((account) => {
             const Icon =
               (LucideIcons as unknown as Record<string, LucideIcons.LucideIcon>)[
@@ -211,7 +231,8 @@ function AccountsPageContent() {
                     {formatCurrency(balance)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Saldo inicial: {formatCurrency(account.initialBalance)}
+                    Até {monthLabel} · Inicial:{" "}
+                    {formatCurrency(account.initialBalance)}
                   </p>
                 </CardContent>
               </Card>

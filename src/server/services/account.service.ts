@@ -6,18 +6,46 @@ import {
 } from "@/server/errors/app-error";
 import { accountRepository } from "@/server/repositories/account.repository";
 import { transactionRepository } from "@/server/repositories/transaction.repository";
+import { getCurrentMonthYear, getMonthRange } from "@/utils/date";
 import type { z } from "zod";
 import type { accountSchema } from "@/server/validation/schemas";
 
 type AccountInput = z.infer<typeof accountSchema>;
 
+export type AccountListOptions = {
+  includeArchived?: boolean;
+  month?: number;
+  year?: number;
+};
+
+function resolvePeriod(month?: number, year?: number) {
+  const current = getCurrentMonthYear();
+  const resolvedYear = year ?? current.year;
+  const resolvedMonth = month ?? current.month;
+  const { start, end } = getMonthRange(resolvedYear, resolvedMonth);
+  return { year: resolvedYear, month: resolvedMonth, start, end };
+}
+
 async function withBalance(
   userId: string,
   account: Awaited<ReturnType<typeof accountRepository.findById>> & object,
+  asOf: Date,
 ) {
   const [income, expense] = await Promise.all([
-    transactionRepository.sumByAccountAndType(userId, account!.id, "INCOME"),
-    transactionRepository.sumByAccountAndType(userId, account!.id, "EXPENSE"),
+    transactionRepository.sumByAccountAndType(
+      userId,
+      account!.id,
+      "INCOME",
+      undefined,
+      asOf,
+    ),
+    transactionRepository.sumByAccountAndType(
+      userId,
+      account!.id,
+      "EXPENSE",
+      undefined,
+      asOf,
+    ),
   ]);
   const mapped = mapAccount(account!);
   return {
@@ -27,19 +55,28 @@ async function withBalance(
 }
 
 export const accountService = {
-  async list(userId: string, includeArchived = false) {
+  async list(userId: string, options: AccountListOptions = {}) {
+    const { includeArchived = false, month, year } = options;
+    const { end } = resolvePeriod(month, year);
     const accounts = await accountRepository.findManyByUser(userId, {
       includeArchived,
     });
-    return Promise.all(accounts.map((account) => withBalance(userId, account)));
+    return Promise.all(
+      accounts.map((account) => withBalance(userId, account, end)),
+    );
   },
 
-  async getById(userId: string, id: string) {
+  async getById(
+    userId: string,
+    id: string,
+    options: { month?: number; year?: number } = {},
+  ) {
     const account = await accountRepository.findById(userId, id);
     if (!account) {
       throw new NotFoundError("Conta não encontrada");
     }
-    return withBalance(userId, account);
+    const { end } = resolvePeriod(options.month, options.year);
+    return withBalance(userId, account, end);
   },
 
   async create(userId: string, input: AccountInput) {
@@ -82,7 +119,8 @@ export const accountService = {
       ...(input.archived !== undefined ? { archived: input.archived } : {}),
     });
 
-    return withBalance(userId, account);
+    const { end } = resolvePeriod();
+    return withBalance(userId, account, end);
   },
 
   async delete(userId: string, id: string) {

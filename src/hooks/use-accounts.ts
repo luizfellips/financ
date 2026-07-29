@@ -12,14 +12,17 @@ import type { Account, AccountType } from "@/types/models";
 
 export const accountKeys = {
   all: ["accounts"] as const,
-  list: () => [...accountKeys.all, "list"] as const,
+  list: (month?: number, year?: number) =>
+    [...accountKeys.all, "list", month ?? "current", year ?? "current"] as const,
 };
 
-export function useAccounts() {
+export function useAccounts(month?: number, year?: number) {
   return useQuery({
-    queryKey: accountKeys.list(),
+    queryKey: accountKeys.list(month, year),
     queryFn: async () => {
-      const { data } = await apiClient<Account[]>("/api/accounts");
+      const { data } = await apiClient<Account[]>("/api/accounts", {
+        params: { month, year },
+      });
       return data;
     },
   });

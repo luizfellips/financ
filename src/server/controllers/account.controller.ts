@@ -3,6 +3,7 @@ import { success } from "@/server/http/response";
 import { accountService } from "@/server/services/account.service";
 import {
   accountSchema,
+  periodQuerySchema,
 } from "@/server/validation/schemas";
 import type { AuthenticatedUser } from "@/server/http/handler";
 import type { NextRequest } from "next/server";
@@ -12,12 +13,24 @@ const accountUpdateSchema = accountSchema.partial().extend({
   archived: z.boolean().optional(),
 });
 
+const listQuerySchema = periodQuerySchema.extend({
+  includeArchived: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((value) => value === "true"),
+});
+
 export const accountController = {
   async list(user: AuthenticatedUser | null, request: NextRequest) {
     const authUser = requireUser(user);
-    const includeArchived =
-      request.nextUrl.searchParams.get("includeArchived") === "true";
-    const data = await accountService.list(authUser.id, includeArchived);
+    const query = listQuerySchema.parse(
+      Object.fromEntries(request.nextUrl.searchParams.entries()),
+    );
+    const data = await accountService.list(authUser.id, {
+      includeArchived: query.includeArchived,
+      month: query.month,
+      year: query.year,
+    });
     return success(data);
   },
 
