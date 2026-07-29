@@ -1,36 +1,244 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Financ — Finanças Pessoais
 
-## Getting Started
+Aplicação web completa de finanças pessoais, com dashboard premium, receitas, despesas, categorias, orçamentos, metas, relatórios e importação/exportação.
 
-First, run the development server:
+Inspirada em produtos como Monarch Money, YNAB, Copilot Money e Mobills.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Tech Stack
+
+- **Next.js 15** (App Router) + **React 19** + **TypeScript**
+- **Tailwind CSS v4** + **shadcn/ui** + **Lucide** + **Framer Motion**
+- **Prisma ORM** + **PostgreSQL 16**
+- **Auth.js (NextAuth v5)** — Credentials + JWT
+- **TanStack Query** + **Zustand** + **React Hook Form** + **Zod**
+- **Recharts** + **date-fns** + **sonner**
+- **Vitest** + **React Testing Library**
+- **Docker** + **Railway-ready**
+
+## Features
+
+- Autenticação completa (registro, login, logout, rotas protegidas)
+- Dashboard com KPIs animados, fluxo de caixa, contas próximas, orçamentos e metas
+- CRUD de receitas e despesas (recorrência e parcelamento)
+- Categorias customizáveis (cor + ícone)
+- Orçamentos mensais com alertas
+- Metas financeiras com aportes e estimativa de conclusão
+- Histórico unificado de transações (filtros, busca, ordenação, paginação)
+- Relatórios com gráficos Recharts
+- Importação/exportação CSV e JSON + backup/restore
+- Tema claro / escuro / sistema
+- Command palette (`Ctrl+K`)
+- Layout responsivo mobile-first
+
+## Screenshots
+
+Após subir a aplicação localmente, capture e anexe:
+
+- Dashboard (`/dashboard`)
+- Transações (`/transacoes`)
+- Relatórios (`/relatorios`)
+- Login (`/login`)
+
+## Architecture
+
+```
+UI (App Router) → TanStack Query hooks → Route Handlers
+  → Controllers → Services → Repositories → Prisma → PostgreSQL
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Camadas:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `src/app` — páginas e route handlers
+- `src/features` — UI por domínio
+- `src/components` — UI compartilhada + shadcn
+- `src/server/controllers` — orquestração HTTP
+- `src/server/services` — regras de negócio
+- `src/server/repositories` — acesso a dados (sempre scoped por `userId`)
+- `src/server/validation` — schemas Zod
+- `src/server/dto` — mappers Decimal ↔ number
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Folder Structure
 
-## Learn More
+```text
+financ/
+├── prisma/
+│   ├── schema.prisma
+│   ├── seed.ts
+│   └── migrations/
+├── src/
+│   ├── app/
+│   │   ├── (auth)/login|register
+│   │   ├── (dashboard)/dashboard|transacoes|receitas|despesas|...
+│   │   └── api/...
+│   ├── components/{ui,layout,shared,charts,providers}
+│   ├── features/{transactions,categories,budgets,goals}
+│   ├── hooks/
+│   ├── lib/
+│   ├── server/{controllers,services,repositories,validation,dto,errors,http}
+│   ├── stores/
+│   ├── types/
+│   └── utils/
+├── tests/
+├── docker-compose.yml
+├── Dockerfile
+├── railway.json
+└── README.md
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Prerequisites
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Node.js 20+ (recomendado 22)
+- npm 10+
+- Docker Desktop (para PostgreSQL e deploy local)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Environment Variables
 
-## Deploy on Vercel
+Copie o exemplo e ajuste:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+cp .env.example .env
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Variável | Descrição |
+|----------|-----------|
+| `DATABASE_URL` | Connection string PostgreSQL |
+| `AUTH_SECRET` / `NEXTAUTH_SECRET` | Segredo JWT (32+ chars) |
+| `AUTH_URL` / `NEXTAUTH_URL` | URL pública da app |
+| `PORT` | Porta HTTP (padrão `3000`) |
+| `NODE_ENV` | `development` ou `production` |
+| `SEED_USER_EMAIL` | E-mail do usuário demo |
+| `SEED_USER_PASSWORD` | Senha do usuário demo |
+
+## Installation
+
+```bash
+npm install
+cp .env.example .env
+docker compose up -d db
+npx prisma migrate dev
+npm run db:seed
+npm run dev
+```
+
+Abra [http://localhost:3000](http://localhost:3000).
+
+### Credenciais demo
+
+- **E-mail:** `demo@financ.app`
+- **Senha:** `Demo@123456`
+
+## Development
+
+```bash
+npm run dev          # Next.js + Turbopack
+npm run typecheck    # TypeScript strict
+npm run lint         # ESLint
+npm run format       # Prettier
+npm test             # Vitest
+npm run db:studio    # Prisma Studio
+```
+
+## Database
+
+```bash
+npm run db:migrate          # migrate dev
+npm run db:migrate:deploy   # produção
+npm run db:seed             # dados demo pt-BR
+npm run db:reset            # reset + seed
+```
+
+## Docker
+
+Sobe app + Postgres em um comando:
+
+```bash
+docker compose up --build
+```
+
+- App: http://localhost:3000
+- Healthcheck: `GET /api/health`
+- No start, o container executa `prisma migrate deploy` e sobe o Next.js standalone
+
+Somente o banco:
+
+```bash
+docker compose up -d db
+```
+
+## Railway Deployment
+
+1. Crie um projeto no [Railway](https://railway.app)
+2. Adicione um serviço PostgreSQL
+3. Faça deploy deste repositório (Dockerfile)
+4. Configure as variáveis:
+
+```env
+DATABASE_URL=<railway postgres url>
+AUTH_SECRET=<gere um secret longo>
+NEXTAUTH_SECRET=<mesmo secret>
+AUTH_URL=https://seu-dominio.up.railway.app
+NEXTAUTH_URL=https://seu-dominio.up.railway.app
+NODE_ENV=production
+PORT=3000
+```
+
+O arquivo `railway.json` já define healthcheck em `/api/health`.
+
+Após o deploy, rode o seed uma vez (Railway shell ou one-off):
+
+```bash
+npx prisma db seed
+```
+
+## Scripts
+
+| Script | Descrição |
+|--------|-----------|
+| `dev` | Servidor de desenvolvimento |
+| `build` | `prisma generate` + `next build` |
+| `start` | Servidor de produção |
+| `test` | Testes Vitest |
+| `lint` | ESLint |
+| `typecheck` | `tsc --noEmit` |
+| `db:*` | Comandos Prisma |
+
+## API Overview
+
+Resposta padrão:
+
+```json
+{
+  "success": true,
+  "data": {},
+  "meta": { "page": 1, "pageSize": 20, "total": 100, "totalPages": 5 }
+}
+```
+
+Principais rotas autenticadas:
+
+- `GET /api/dashboard`
+- `CRUD /api/transactions|incomes|expenses`
+- `CRUD /api/categories|budgets|goals`
+- `GET /api/reports`
+- `GET /api/export` · `POST /api/import`
+- `GET /api/backup` · `POST /api/restore`
+- `GET /api/health` (público)
+- `POST /api/auth/register` (público)
+
+## Testing
+
+```bash
+npm test
+```
+
+Cobertura básica:
+
+- Utilitários de moeda e data
+- KPI card
+- Filtros de transações
+- Schemas Zod (auth, budget, transaction)
+- Cálculo de orçamento e parcelamento
+
+## License
+
+MIT © Financ
