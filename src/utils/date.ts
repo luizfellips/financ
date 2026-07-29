@@ -8,12 +8,34 @@ import {
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+/** Calendar day from a Date stored as UTC (avoids local TZ shifting the day). */
+export function toUtcDateOnly(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+/**
+ * Formats a calendar date for display.
+ * For ISO strings, uses the yyyy-MM-dd prefix so UTC midnight
+ * (e.g. 2026-07-29T00:00:00.000Z) does not render as the previous day in Brazil.
+ */
 export function formatDate(date: Date | string, pattern = "dd/MM/yyyy"): string {
+  if (typeof date === "string") {
+    const dateOnly = date.slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) {
+      return format(parseISO(dateOnly), pattern, { locale: ptBR });
+    }
+  }
   const value = typeof date === "string" ? parseISO(date) : date;
   return format(value, pattern, { locale: ptBR });
 }
 
 export function formatMonthYear(date: Date | string): string {
+  if (typeof date === "string") {
+    const dateOnly = date.slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) {
+      return format(parseISO(dateOnly), "MMMM yyyy", { locale: ptBR });
+    }
+  }
   const value = typeof date === "string" ? parseISO(date) : date;
   return format(value, "MMMM yyyy", { locale: ptBR });
 }

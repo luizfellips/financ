@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { getMonthRange, previousMonths, toIsoDateOnly } from "@/utils/date";
+import {
+  formatDate,
+  getMonthRange,
+  previousMonths,
+  toIsoDateOnly,
+  toUtcDateOnly,
+} from "@/utils/date";
 
 describe("date utils", () => {
   it("returns month range boundaries", () => {
@@ -20,5 +26,16 @@ describe("date utils", () => {
 
   it("formats iso date only", () => {
     expect(toIsoDateOnly(new Date(2026, 6, 29))).toBe("2026-07-29");
+  });
+
+  it("formats UTC midnight ISO strings without shifting the day", () => {
+    expect(formatDate("2026-07-29T00:00:00.000Z")).toBe("29/07/2026");
+    expect(formatDate("2026-07-29")).toBe("29/07/2026");
+  });
+
+  it("serializes UTC calendar day", () => {
+    expect(toUtcDateOnly(new Date("2026-07-29T00:00:00.000Z"))).toBe(
+      "2026-07-29",
+    );
   });
 });

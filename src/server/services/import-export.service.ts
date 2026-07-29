@@ -2,6 +2,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { parseCsv, toCsv } from "@/utils/csv";
 import { toDecimal, decimalToNumber, mapTransaction } from "@/server/dto/mappers";
+import { toUtcDateOnly } from "@/utils/date";
 import { ValidationError } from "@/server/errors/app-error";
 import { accountRepository } from "@/server/repositories/account.repository";
 import { categoryRepository } from "@/server/repositories/category.repository";
@@ -12,6 +13,7 @@ import { settingsRepository } from "@/server/repositories/settings.repository";
 import {
   backupSchema,
   IMPORT_MAX_CSV_ROWS,
+  parseCalendarDate,
 } from "@/server/validation/schemas";
 
 const csvRowSchema = z.object({
@@ -51,12 +53,16 @@ const csvRowSchema = z.object({
 });
 
 function parseDate(value: string): Date {
-  const iso = Date.parse(value);
-  if (!Number.isNaN(iso)) return new Date(iso);
+  const calendar = parseCalendarDate(value);
+  if (calendar instanceof Date && !Number.isNaN(calendar.getTime())) {
+    return calendar;
+  }
 
   const br = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value.trim());
   if (br) {
-    return new Date(Number(br[3]), Number(br[2]) - 1, Number(br[1]));
+    return new Date(
+      Date.UTC(Number(br[3]), Number(br[2]) - 1, Number(br[1]), 12, 0, 0),
+    );
   }
 
   throw new ValidationError(`Data inválida: ${value}`);
@@ -70,7 +76,7 @@ export const importExportService = {
       title: tx.title,
       amount: decimalToNumber(tx.amount),
       type: tx.type,
-      date: tx.date.toISOString().slice(0, 10),
+      date: toUtcDateOnly(tx.date),
       account: tx.account.name,
       accountId: tx.accountId,
       category: tx.category.name,
@@ -330,7 +336,7 @@ export const importExportService = {
         type: tx.type,
         title: tx.title,
         amount: decimalToNumber(tx.amount),
-        date: tx.date.toISOString(),
+        date: toUtcDateOnly(tx.date),
         notes: tx.notes,
         paymentMethod: tx.paymentMethod,
         recurrence: tx.recurrence,
@@ -352,14 +358,14 @@ export const importExportService = {
         name: g.name,
         targetAmount: decimalToNumber(g.targetAmount),
         savedAmount: decimalToNumber(g.savedAmount),
-        deadline: g.deadline?.toISOString() ?? null,
+        deadline: g.deadline ? toUtcDateOnly(g.deadline) : null,
         color: g.color,
         icon: g.icon,
         completedAt: g.completedAt?.toISOString() ?? null,
         contributions: g.contributions.map((c) => ({
           amount: decimalToNumber(c.amount),
           note: c.note,
-          date: c.date.toISOString(),
+          date: toUtcDateOnly(c.date),
         })),
       })),
       settings: settings

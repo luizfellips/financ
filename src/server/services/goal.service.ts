@@ -1,6 +1,6 @@
 import { subMonths } from "date-fns";
 import { clampPercent } from "@/utils/currency";
-import { estimateCompletionDate } from "@/utils/date";
+import { estimateCompletionDate, toUtcDateOnly } from "@/utils/date";
 import { decimalToNumber, mapGoal, toDecimal } from "@/server/dto/mappers";
 import { NotFoundError, ValidationError } from "@/server/errors/app-error";
 import { goalRepository } from "@/server/repositories/goal.repository";
@@ -56,11 +56,13 @@ async function enrichGoal(
     percent,
     remaining: Math.max(0, mapped.targetAmount - mapped.savedAmount),
     averageMonthlyContribution: Math.round(avgMonthly * 100) / 100,
-    estimatedCompletion: estimatedCompletion?.toISOString() ?? null,
+    estimatedCompletion: estimatedCompletion
+      ? toUtcDateOnly(estimatedCompletion)
+      : null,
     contributions: goal.contributions.map((c) => ({
       ...c,
       amount: decimalToNumber(c.amount),
-      date: c.date.toISOString(),
+      date: toUtcDateOnly(c.date),
       createdAt: c.createdAt.toISOString(),
     })),
   };
@@ -194,7 +196,7 @@ export const goalService = {
       contribution: {
         ...contribution,
         amount: decimalToNumber(contribution.amount),
-        date: contribution.date.toISOString(),
+        date: toUtcDateOnly(contribution.date),
         createdAt: contribution.createdAt.toISOString(),
       },
     };

@@ -1,5 +1,6 @@
 import { Decimal } from "@prisma/client/runtime/library";
 import { toNumber } from "@/utils/currency";
+import { toUtcDateOnly } from "@/utils/date";
 
 export function decimalToNumber(value: Decimal | number | string | null | undefined): number {
   if (value == null) return 0;
@@ -23,7 +24,7 @@ export function mapTransaction<T extends {
   return {
     ...transaction,
     amount: decimalToNumber(transaction.amount),
-    date: transaction.date.toISOString(),
+    date: toUtcDateOnly(transaction.date),
     createdAt: transaction.createdAt.toISOString(),
     updatedAt: transaction.updatedAt.toISOString(),
   };
@@ -67,7 +68,7 @@ export function mapGoal<T extends {
     ...goal,
     targetAmount: decimalToNumber(goal.targetAmount),
     savedAmount: decimalToNumber(goal.savedAmount),
-    deadline: goal.deadline?.toISOString() ?? null,
+    deadline: goal.deadline ? toUtcDateOnly(goal.deadline) : null,
     completedAt: goal.completedAt?.toISOString() ?? null,
     createdAt: goal.createdAt.toISOString(),
     updatedAt: goal.updatedAt.toISOString(),

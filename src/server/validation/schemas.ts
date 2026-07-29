@@ -1,5 +1,25 @@
 import { z } from "zod";
 
+/** Parse yyyy-MM-dd (or ISO prefix) as UTC noon so the calendar day is stable across timezones. */
+export function parseCalendarDate(value: unknown): unknown {
+  if (value instanceof Date) return value;
+  if (typeof value !== "string" && typeof value !== "number") return value;
+
+  const raw = String(value).trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+  if (match) {
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+  }
+
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? value : parsed;
+}
+
+export const calendarDateSchema = z.preprocess(parseCalendarDate, z.date());
+
 export const paginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
@@ -48,7 +68,7 @@ export const transactionSchema = z.object({
   type: z.enum(["INCOME", "EXPENSE"]),
   title: z.string().trim().min(2).max(120),
   amount: z.coerce.number().positive("Valor deve ser positivo").finite(),
-  date: z.coerce.date(),
+  date: calendarDateSchema,
   notes: z.string().max(2000).optional().nullable(),
   paymentMethod: z
     .enum(["CASH", "DEBIT_CARD", "CREDIT_CARD", "PIX", "BANK_TRANSFER", "BOLETO", "OTHER"])
@@ -75,6 +95,11 @@ export const transactionFilterSchema = paginationSchema.extend({
   recurring: z.enum(["true", "false", "all"]).optional().default("all"),
 });
 
+export const periodQuerySchema = z.object({
+  month: z.coerce.number().int().min(1).max(12).optional(),
+  year: z.coerce.number().int().min(2000).max(2100).optional(),
+});
+
 export const budgetSchema = z.object({
   categoryId: z.string().cuid(),
   month: z.coerce.number().int().min(1).max(12),
@@ -87,7 +112,7 @@ export const goalSchema = z.object({
   name: z.string().trim().min(2).max(100),
   targetAmount: z.coerce.number().positive().finite(),
   savedAmount: z.coerce.number().min(0).finite().default(0),
-  deadline: z.coerce.date().optional().nullable(),
+  deadline: calendarDateSchema.optional().nullable(),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default("#22c55e"),
   icon: z.string().min(1).max(40).default("Target"),
 });
@@ -95,7 +120,7 @@ export const goalSchema = z.object({
 export const goalContributionSchema = z.object({
   amount: z.coerce.number().positive().finite(),
   note: z.string().max(500).optional().nullable(),
-  date: z.coerce.date().optional(),
+  date: calendarDateSchema.optional(),
 });
 
 export const settingsSchema = z.object({
