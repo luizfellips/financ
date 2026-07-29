@@ -9,6 +9,7 @@ import { DataTable, type DataTableColumn } from "@/components/shared/data-table"
 import { EmptyState } from "@/components/shared/empty-state";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { PageHeader } from "@/components/shared/page-header";
+import { TransactionAmount } from "@/components/shared/transaction-amount";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -36,7 +37,6 @@ import {
 } from "@/hooks/use-transactions";
 import { PAYMENT_METHOD_LABELS } from "@/lib/labels";
 import type { Transaction, TransactionFilters } from "@/types/models";
-import { formatCurrency } from "@/utils/currency";
 import { formatDate } from "@/utils/date";
 
 function ExpensesPageContent() {
@@ -103,8 +103,8 @@ function ExpensesPageContent() {
       id: "amount",
       header: "Valor",
       headerClassName: "text-right",
-      className: "text-right tabular-nums font-medium",
-      cell: (row) => `-${formatCurrency(row.amount)}`,
+      className: "text-right",
+      cell: (row) => <TransactionAmount type="EXPENSE" amount={row.amount} />,
     },
     {
       id: "actions",

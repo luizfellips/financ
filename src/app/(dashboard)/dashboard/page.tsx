@@ -23,6 +23,7 @@ import {
 } from "@/components/shared/month-year-picker";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatProgress } from "@/components/shared/stat-progress";
+import { TransactionAmount } from "@/components/shared/transaction-amount";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -416,17 +417,11 @@ export default function DashboardPage() {
                         {tx.category ? ` · ${tx.category.name}` : ""}
                       </p>
                     </div>
-                    <p
-                      className={cn(
-                        "shrink-0 text-sm font-medium tabular-nums",
-                        tx.type === "INCOME"
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-foreground",
-                      )}
-                    >
-                      {tx.type === "INCOME" ? "+" : "-"}
-                      {formatCurrency(tx.amount)}
-                    </p>
+                    <TransactionAmount
+                      type={tx.type}
+                      amount={tx.amount}
+                      className="w-auto shrink-0 text-sm"
+                    />
                   </li>
                 ))}
               </ul>
