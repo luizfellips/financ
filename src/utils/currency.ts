@@ -43,6 +43,24 @@ export function parseCurrencyInput(value: string): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+/** Digits typed left-to-right as cents: "1" → 0.01, "15050" → 150.50 */
+export function parseMoneyDigits(
+  digits: string,
+  options?: { negative?: boolean; maxDigits?: number },
+): number {
+  const maxDigits = options?.maxDigits ?? 15;
+  const cleaned = digits.replace(/\D/g, "").replace(/^0+(?=\d)/, "").slice(0, maxDigits);
+  if (!cleaned) return 0;
+
+  const amount = Number.parseInt(cleaned, 10) / 100;
+  if (!Number.isFinite(amount)) return 0;
+  return options?.negative ? -amount : amount;
+}
+
+export function extractMoneyDigits(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
 export function toNumber(value: unknown): number {
   if (typeof value === "number") return value;
   if (typeof value === "string") return Number.parseFloat(value);

@@ -171,6 +171,7 @@ export function AccountForm({
                 <MoneyInput
                   value={field.value}
                   onValueChange={field.onChange}
+                  allowNegative
                 />
               </FormControl>
               <FormDescription>
