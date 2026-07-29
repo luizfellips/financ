@@ -168,6 +168,18 @@ function TransactionsPageContent() {
               <Pencil className="mr-2 h-4 w-4" />
               Editar
             </DropdownMenuItem>
+            {row.type !== "TRANSFER" ? (
+              <DropdownMenuItem
+                onClick={() => {
+                  setEditing(row);
+                  setDialogOpen(false);
+                  setTransferOpen(true);
+                }}
+              >
+                <ArrowLeftRight className="mr-2 h-4 w-4" />
+                Converter em transferência
+              </DropdownMenuItem>
+            ) : null}
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"
               onClick={() => setDeleting(row)}
@@ -190,6 +202,10 @@ function TransactionsPageContent() {
     setDialogOpen(false);
     setEditing(null);
   }
+
+  const converting =
+    editing != null &&
+    (editing.type === "INCOME" || editing.type === "EXPENSE");
 
   async function handleTransferSubmit(values: TransferFormValues) {
     if (editing) {
@@ -346,7 +362,11 @@ function TransactionsPageContent() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {editing ? "Editar transferência" : "Transferir entre contas"}
+              {converting
+                ? "Converter em transferência"
+                : editing
+                  ? "Editar transferência"
+                  : "Transferir entre contas"}
             </DialogTitle>
           </DialogHeader>
           <TransferForm
@@ -357,7 +377,9 @@ function TransactionsPageContent() {
               setEditing(null);
             }}
             onSubmit={handleTransferSubmit}
-            submitLabel={editing ? "Salvar" : "Transferir"}
+            submitLabel={
+              converting ? "Converter" : editing ? "Salvar" : "Transferir"
+            }
           />
         </DialogContent>
       </Dialog>

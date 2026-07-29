@@ -68,6 +68,30 @@ type TransferFormProps = {
   submitLabel?: string;
 };
 
+function resolveAccountDefaults(transaction?: Transaction | null) {
+  if (!transaction) {
+    return { accountId: "", transferToAccountId: "" };
+  }
+  if (transaction.type === "TRANSFER") {
+    return {
+      accountId: transaction.accountId,
+      transferToAccountId: transaction.transferToAccountId ?? "",
+    };
+  }
+  if (transaction.type === "INCOME") {
+    // Entrada na conta = destino da transferência
+    return {
+      accountId: "",
+      transferToAccountId: transaction.accountId,
+    };
+  }
+  // Saída da conta = origem da transferência
+  return {
+    accountId: transaction.accountId,
+    transferToAccountId: "",
+  };
+}
+
 export function TransferForm({
   transaction,
   onSubmit,
@@ -76,12 +100,16 @@ export function TransferForm({
 }: TransferFormProps) {
   const [pending, setPending] = React.useState(false);
   const { data: accounts = [] } = useAccounts();
+  const converting =
+    transaction != null &&
+    (transaction.type === "INCOME" || transaction.type === "EXPENSE");
+  const accountDefaults = resolveAccountDefaults(transaction);
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
-      accountId: transaction?.accountId ?? "",
-      transferToAccountId: transaction?.transferToAccountId ?? "",
+      accountId: accountDefaults.accountId,
+      transferToAccountId: accountDefaults.transferToAccountId,
       title: transaction?.title ?? "Transferência entre contas",
       amount: transaction?.amount ?? 0,
       date:
@@ -93,11 +121,14 @@ export function TransferForm({
   });
 
   React.useEffect(() => {
+    // Não preencher origem automaticamente ao converter receita
+    // (a conta atual já é o destino).
+    if (converting && transaction?.type === "INCOME") return;
     if (accounts.length && !form.getValues("accountId")) {
       const preferred = accounts.find((a) => a.isDefault) ?? accounts[0];
       if (preferred) form.setValue("accountId", preferred.id);
     }
-  }, [accounts, form]);
+  }, [accounts, form, converting, transaction?.type]);
 
   const fromId = form.watch("accountId");
   const destinationAccounts = accounts.filter((a) => a.id !== fromId);
@@ -121,6 +152,14 @@ export function TransferForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        {converting ? (
+          <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+            {transaction?.type === "INCOME"
+              ? "Esta receita passará a ser uma transferência. Confirme a conta de origem."
+              : "Esta despesa passará a ser uma transferência. Confirme a conta de destino."}
+          </p>
+        ) : null}
+
         <FormField
           control={form.control}
           name="title"

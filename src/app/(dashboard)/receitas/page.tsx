@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeftRight, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
 
@@ -29,6 +29,10 @@ import {
   type TransactionFormValues,
 } from "@/features/transactions/components/transaction-form";
 import {
+  TransferForm,
+  type TransferFormValues,
+} from "@/features/transactions/components/transfer-form";
+import {
   useCreateIncome,
   useDeleteTransaction,
   useIncomes,
@@ -51,6 +55,7 @@ function IncomesPageContent() {
     search: "",
   });
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [transferOpen, setTransferOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Transaction | null>(null);
   const [deleting, setDeleting] = React.useState<Transaction | null>(null);
 
@@ -117,6 +122,15 @@ function IncomesPageContent() {
               Editar
             </DropdownMenuItem>
             <DropdownMenuItem
+              onClick={() => {
+                setEditing(row);
+                setTransferOpen(true);
+              }}
+            >
+              <ArrowLeftRight className="mr-2 h-4 w-4" />
+              Converter em transferência
+            </DropdownMenuItem>
+            <DropdownMenuItem
               className="text-destructive focus:text-destructive"
               onClick={() => setDeleting(row)}
             >
@@ -138,6 +152,13 @@ function IncomesPageContent() {
       await createMutation.mutateAsync(rest);
     }
     setDialogOpen(false);
+    setEditing(null);
+  }
+
+  async function handleConvertSubmit(values: TransferFormValues) {
+    if (!editing) return;
+    await updateMutation.mutateAsync({ id: editing.id, ...values });
+    setTransferOpen(false);
     setEditing(null);
   }
 
@@ -238,6 +259,30 @@ function IncomesPageContent() {
               setEditing(null);
             }}
             onSubmit={handleSubmit}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={transferOpen}
+        onOpenChange={(open) => {
+          setTransferOpen(open);
+          if (!open) setEditing(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Converter em transferência</DialogTitle>
+          </DialogHeader>
+          <TransferForm
+            key={editing?.id ?? "convert-income"}
+            transaction={editing}
+            onCancel={() => {
+              setTransferOpen(false);
+              setEditing(null);
+            }}
+            onSubmit={handleConvertSubmit}
+            submitLabel="Converter"
           />
         </DialogContent>
       </Dialog>
