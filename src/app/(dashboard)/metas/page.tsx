@@ -49,11 +49,13 @@ import {
 import {
   useContributeGoal,
   useCreateGoal,
+  useDeleteContribution,
   useDeleteGoal,
   useGoals,
+  useUpdateContribution,
   useUpdateGoal,
 } from "@/hooks/use-goals";
-import type { Goal } from "@/types/models";
+import type { Goal, GoalContribution } from "@/types/models";
 import { formatCurrency } from "@/utils/currency";
 import { formatDate } from "@/utils/date";
 
@@ -64,13 +66,23 @@ function GoalsPageContent() {
   const [contributeOpen, setContributeOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Goal | null>(null);
   const [contributing, setContributing] = React.useState<Goal | null>(null);
+  const [editingContribution, setEditingContribution] = React.useState<{
+    goal: Goal;
+    contribution: GoalContribution;
+  } | null>(null);
   const [deleting, setDeleting] = React.useState<Goal | null>(null);
+  const [deletingContribution, setDeletingContribution] = React.useState<{
+    goal: Goal;
+    contribution: GoalContribution;
+  } | null>(null);
 
   const { data: goals = [], isLoading } = useGoals();
   const createMutation = useCreateGoal();
   const updateMutation = useUpdateGoal();
   const deleteMutation = useDeleteGoal();
   const contributeMutation = useContributeGoal();
+  const updateContributionMutation = useUpdateContribution();
+  const deleteContributionMutation = useDeleteContribution();
 
   React.useEffect(() => {
     if (searchParams.get("nova") === "1") {
@@ -100,6 +112,18 @@ function GoalsPageContent() {
     });
     setContributeOpen(false);
     setContributing(null);
+  }
+
+  async function handleUpdateContribution(values: ContributionFormValues) {
+    if (!editingContribution) return;
+    await updateContributionMutation.mutateAsync({
+      goalId: editingContribution.goal.id,
+      contributionId: editingContribution.contribution.id,
+      amount: values.amount,
+      note: values.note,
+      date: values.date,
+    });
+    setEditingContribution(null);
   }
 
   return (
@@ -240,6 +264,71 @@ function GoalsPageContent() {
                       </p>
                     ) : null}
                   </div>
+
+                  {goal.contributions.length > 0 ? (
+                    <div className="space-y-2 border-t pt-3">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Contribuições ({goal.contributions.length})
+                      </p>
+                      <ul className="max-h-48 space-y-1.5 overflow-y-auto">
+                        {goal.contributions.map((contribution) => (
+                          <li
+                            key={contribution.id}
+                            className="flex items-start justify-between gap-2 rounded-md bg-muted/40 px-2.5 py-2"
+                          >
+                            <div className="min-w-0 space-y-0.5">
+                              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                                <span className="text-sm font-medium tabular-nums">
+                                  {formatCurrency(contribution.amount)}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {formatDate(contribution.date)}
+                                </span>
+                              </div>
+                              {contribution.note ? (
+                                <p className="truncate text-xs text-muted-foreground">
+                                  {contribution.note}
+                                </p>
+                              ) : null}
+                            </div>
+                            <div className="flex shrink-0 gap-0.5">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                aria-label="Editar contribuição"
+                                onClick={() =>
+                                  setEditingContribution({
+                                    goal,
+                                    contribution,
+                                  })
+                                }
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-destructive hover:text-destructive"
+                                aria-label="Excluir contribuição"
+                                onClick={() =>
+                                  setDeletingContribution({
+                                    goal,
+                                    contribution,
+                                  })
+                                }
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+
                   {!completed ? (
                     <Button
                       size="sm"
@@ -308,6 +397,37 @@ function GoalsPageContent() {
         </DialogContent>
       </Dialog>
 
+      <Dialog
+        open={Boolean(editingContribution)}
+        onOpenChange={(open) => {
+          if (!open) setEditingContribution(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Editar contribuição
+              {editingContribution
+                ? ` — ${editingContribution.goal.name}`
+                : ""}
+            </DialogTitle>
+          </DialogHeader>
+          {editingContribution ? (
+            <ContributionForm
+              key={editingContribution.contribution.id}
+              submitLabel="Salvar"
+              defaultValues={{
+                amount: editingContribution.contribution.amount,
+                note: editingContribution.contribution.note,
+                date: editingContribution.contribution.date,
+              }}
+              onCancel={() => setEditingContribution(null)}
+              onSubmit={handleUpdateContribution}
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
       <ConfirmDialog
         open={Boolean(deleting)}
         onOpenChange={(open) => !open && setDeleting(null)}
@@ -319,6 +439,29 @@ function GoalsPageContent() {
         onConfirm={async () => {
           if (deleting) await deleteMutation.mutateAsync(deleting.id);
           setDeleting(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deletingContribution)}
+        onOpenChange={(open) => !open && setDeletingContribution(null)}
+        title="Excluir contribuição?"
+        description={
+          deletingContribution
+            ? `Remover ${formatCurrency(deletingContribution.contribution.amount)} de "${deletingContribution.goal.name}". O valor poupado será atualizado.`
+            : undefined
+        }
+        confirmLabel="Excluir"
+        variant="destructive"
+        loading={deleteContributionMutation.isPending}
+        onConfirm={async () => {
+          if (deletingContribution) {
+            await deleteContributionMutation.mutateAsync({
+              goalId: deletingContribution.goal.id,
+              contributionId: deletingContribution.contribution.id,
+            });
+          }
+          setDeletingContribution(null);
         }}
       />
     </div>

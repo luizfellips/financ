@@ -55,4 +55,35 @@ export const goalController = {
     const data = await goalService.addContribution(authUser.id, id, body);
     return success(data, { status: 201 });
   },
+
+  async updateContribution(
+    user: AuthenticatedUser | null,
+    goalId: string,
+    contributionId: string,
+    request: NextRequest,
+  ) {
+    const authUser = requireUser(user);
+    const body = goalContributionSchema.partial().parse(await request.json());
+    const data = await goalService.updateContribution(
+      authUser.id,
+      goalId,
+      contributionId,
+      body,
+    );
+    return success(data);
+  },
+
+  async deleteContribution(
+    user: AuthenticatedUser | null,
+    goalId: string,
+    contributionId: string,
+  ) {
+    const authUser = requireUser(user);
+    const data = await goalService.deleteContribution(
+      authUser.id,
+      goalId,
+      contributionId,
+    );
+    return success(data);
+  },
 };

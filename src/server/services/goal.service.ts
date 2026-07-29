@@ -174,31 +174,118 @@ export const goalService = {
     );
 
     const enriched = await enrichGoal(goal);
-
-    if (!wasComplete && goal.completedAt) {
-      const settings = await settingsRepository.findByUser(userId);
-      if (!settings || settings.notifyGoals) {
-        await notificationRepository.create(userId, {
-          type: "GOAL_REACHED",
-          title: "Meta alcançada!",
-          message: `Parabéns! Você atingiu a meta "${goal.name}".`,
-          metadata: {
-            goalId: goal.id,
-            targetAmount: enriched.targetAmount,
-            savedAmount: enriched.savedAmount,
-          },
-        });
-      }
-    }
+    await maybeNotifyGoalReached(userId, wasComplete, goal, enriched);
 
     return {
       goal: enriched,
-      contribution: {
-        ...contribution,
-        amount: decimalToNumber(contribution.amount),
-        date: toUtcDateOnly(contribution.date),
-        createdAt: contribution.createdAt.toISOString(),
+      contribution: mapContribution(contribution),
+    };
+  },
+
+  async updateContribution(
+    userId: string,
+    goalId: string,
+    contributionId: string,
+    input: Partial<ContributionInput>,
+  ) {
+    const existing = await goalRepository.findById(userId, goalId);
+    if (!existing) {
+      throw new NotFoundError("Meta não encontrada");
+    }
+
+    const contributionExists = existing.contributions.some(
+      (c) => c.id === contributionId,
+    );
+    if (!contributionExists) {
+      throw new NotFoundError("Contribuição não encontrada");
+    }
+
+    const wasComplete = existing.completedAt !== null;
+
+    const { goal, contribution } = await goalRepository.updateContribution(
+      userId,
+      goalId,
+      contributionId,
+      {
+        ...(input.amount !== undefined
+          ? { amount: toDecimal(input.amount) }
+          : {}),
+        ...(input.note !== undefined ? { note: input.note } : {}),
+        ...(input.date !== undefined ? { date: input.date } : {}),
       },
+    );
+
+    const enriched = await enrichGoal(goal);
+    await maybeNotifyGoalReached(userId, wasComplete, goal, enriched);
+
+    return {
+      goal: enriched,
+      contribution: mapContribution(contribution),
+    };
+  },
+
+  async deleteContribution(
+    userId: string,
+    goalId: string,
+    contributionId: string,
+  ) {
+    const existing = await goalRepository.findById(userId, goalId);
+    if (!existing) {
+      throw new NotFoundError("Meta não encontrada");
+    }
+
+    const contributionExists = existing.contributions.some(
+      (c) => c.id === contributionId,
+    );
+    if (!contributionExists) {
+      throw new NotFoundError("Contribuição não encontrada");
+    }
+
+    const { goal, contribution } = await goalRepository.deleteContribution(
+      userId,
+      goalId,
+      contributionId,
+    );
+
+    return {
+      goal: await enrichGoal(goal),
+      contribution: mapContribution(contribution),
     };
   },
 };
+
+function mapContribution(
+  contribution: Awaited<
+    ReturnType<typeof goalRepository.addContribution>
+  >["contribution"],
+) {
+  return {
+    ...contribution,
+    amount: decimalToNumber(contribution.amount),
+    date: toUtcDateOnly(contribution.date),
+    createdAt: contribution.createdAt.toISOString(),
+  };
+}
+
+async function maybeNotifyGoalReached(
+  userId: string,
+  wasComplete: boolean,
+  goal: { id: string; name: string; completedAt: Date | null },
+  enriched: { targetAmount: number; savedAmount: number },
+) {
+  if (wasComplete || !goal.completedAt) return;
+
+  const settings = await settingsRepository.findByUser(userId);
+  if (!settings || settings.notifyGoals) {
+    await notificationRepository.create(userId, {
+      type: "GOAL_REACHED",
+      title: "Meta alcançada!",
+      message: `Parabéns! Você atingiu a meta "${goal.name}".`,
+      metadata: {
+        goalId: goal.id,
+        targetAmount: enriched.targetAmount,
+        savedAmount: enriched.savedAmount,
+      },
+    });
+  }
+}

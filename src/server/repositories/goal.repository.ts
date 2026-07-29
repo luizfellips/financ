@@ -25,6 +25,12 @@ export type CreateContributionData = {
   date?: Date;
 };
 
+export type UpdateContributionData = {
+  amount?: Decimal | number;
+  note?: string | null;
+  date?: Date;
+};
+
 export const goalRepository = {
   async findManyByUser(userId: string): Promise<GoalWithContributions[]> {
     return prisma.goal.findMany({
@@ -161,6 +167,98 @@ export const goalRepository = {
         date: { gte: dateFrom },
       },
       orderBy: { date: "asc" },
+    });
+  },
+
+  async updateContribution(
+    userId: string,
+    goalId: string,
+    contributionId: string,
+    data: UpdateContributionData,
+  ): Promise<{ goal: GoalWithContributions; contribution: GoalContribution }> {
+    return prisma.$transaction(async (tx) => {
+      const goal = await tx.goal.findFirst({ where: { id: goalId, userId } });
+      if (!goal) {
+        throw new Error("NOT_FOUND");
+      }
+
+      const existing = await tx.goalContribution.findFirst({
+        where: { id: contributionId, goalId },
+      });
+      if (!existing) {
+        throw new Error("NOT_FOUND");
+      }
+
+      const nextAmount =
+        data.amount !== undefined ? Number(data.amount) : Number(existing.amount);
+      const delta = nextAmount - Number(existing.amount);
+      const newSaved = Math.max(0, Number(goal.savedAmount) + delta);
+      const target = Number(goal.targetAmount);
+
+      const contribution = await tx.goalContribution.update({
+        where: { id: contributionId },
+        data: {
+          ...(data.amount !== undefined ? { amount: data.amount } : {}),
+          ...(data.note !== undefined ? { note: data.note } : {}),
+          ...(data.date !== undefined ? { date: data.date } : {}),
+        },
+      });
+
+      const updated = await tx.goal.update({
+        where: { id: goalId },
+        data: {
+          savedAmount: newSaved,
+          completedAt:
+            newSaved >= target ? (goal.completedAt ?? new Date()) : null,
+        },
+        include: {
+          contributions: { orderBy: { date: "desc" } },
+        },
+      });
+
+      return { goal: updated, contribution };
+    });
+  },
+
+  async deleteContribution(
+    userId: string,
+    goalId: string,
+    contributionId: string,
+  ): Promise<{ goal: GoalWithContributions; contribution: GoalContribution }> {
+    return prisma.$transaction(async (tx) => {
+      const goal = await tx.goal.findFirst({ where: { id: goalId, userId } });
+      if (!goal) {
+        throw new Error("NOT_FOUND");
+      }
+
+      const existing = await tx.goalContribution.findFirst({
+        where: { id: contributionId, goalId },
+      });
+      if (!existing) {
+        throw new Error("NOT_FOUND");
+      }
+
+      await tx.goalContribution.delete({ where: { id: contributionId } });
+
+      const newSaved = Math.max(
+        0,
+        Number(goal.savedAmount) - Number(existing.amount),
+      );
+      const target = Number(goal.targetAmount);
+
+      const updated = await tx.goal.update({
+        where: { id: goalId },
+        data: {
+          savedAmount: newSaved,
+          completedAt:
+            newSaved >= target ? (goal.completedAt ?? new Date()) : null,
+        },
+        include: {
+          contributions: { orderBy: { date: "desc" } },
+        },
+      });
+
+      return { goal: updated, contribution: existing };
     });
   },
 };

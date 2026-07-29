@@ -133,3 +133,70 @@ export function useContributeGoal() {
     },
   });
 }
+
+type ContributionInput = {
+  goalId: string;
+  contributionId: string;
+  amount?: number;
+  note?: string | null;
+  date?: string;
+};
+
+export function useUpdateContribution() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      goalId,
+      contributionId,
+      amount,
+      note,
+      date,
+    }: ContributionInput) => {
+      const { data } = await apiClient<Goal>(
+        `/api/goals/${goalId}/contributions/${contributionId}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ amount, note, date }),
+        },
+      );
+      return data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: goalKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["reports"] });
+      toast.success("Contribuição atualizada");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao atualizar contribuição");
+    },
+  });
+}
+
+export function useDeleteContribution() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      goalId,
+      contributionId,
+    }: {
+      goalId: string;
+      contributionId: string;
+    }) => {
+      const { data } = await apiClient<{ id: string }>(
+        `/api/goals/${goalId}/contributions/${contributionId}`,
+        { method: "DELETE" },
+      );
+      return data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: goalKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["reports"] });
+      toast.success("Contribuição excluída");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao excluir contribuição");
+    },
+  });
+}

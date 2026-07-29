@@ -29,11 +29,15 @@ const schema = z.object({
 export type ContributionFormValues = z.infer<typeof schema>;
 
 type ContributionFormProps = {
+  defaultValues?: Partial<ContributionFormValues>;
+  submitLabel?: string;
   onSubmit: (values: ContributionFormValues) => Promise<void> | void;
   onCancel?: () => void;
 };
 
 export function ContributionForm({
+  defaultValues,
+  submitLabel = "Contribuir",
   onSubmit,
   onCancel,
 }: ContributionFormProps) {
@@ -41,9 +45,9 @@ export function ContributionForm({
   const form = useForm<ContributionFormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      amount: 0,
-      note: "",
-      date: toIsoDateOnly(new Date()),
+      amount: defaultValues?.amount ?? 0,
+      note: defaultValues?.note ?? "",
+      date: defaultValues?.date ?? toIsoDateOnly(new Date()),
     },
   });
 
@@ -123,7 +127,7 @@ export function ContributionForm({
                 Salvando...
               </>
             ) : (
-              "Contribuir"
+              submitLabel
             )}
           </Button>
         </div>
