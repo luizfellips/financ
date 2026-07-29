@@ -56,3 +56,13 @@ export class ConflictError extends AppError {
     this.name = "ConflictError";
   }
 }
+
+export class RateLimitError extends AppError {
+  readonly retryAfterSec: number;
+
+  constructor(retryAfterSec: number, message = "Muitas tentativas. Tente novamente mais tarde.") {
+    super(message, { status: 429, code: "RATE_LIMITED" });
+    this.name = "RateLimitError";
+    this.retryAfterSec = retryAfterSec;
+  }
+}

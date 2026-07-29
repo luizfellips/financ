@@ -1,8 +1,10 @@
 import type { AuthenticatedUser } from "@/server/http/handler";
 import { requireUser } from "@/server/http/handler";
 import { success } from "@/server/http/response";
-import { ValidationError } from "@/server/errors/app-error";
+import { RateLimitError, ValidationError } from "@/server/errors/app-error";
 import { importExportService } from "@/server/services/import-export.service";
+import { checkRateLimit, clientIp } from "@/lib/rate-limit";
+import { IMPORT_MAX_BYTES } from "@/server/validation/schemas";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -25,6 +27,40 @@ function fileResponse(
   });
 }
 
+function assertContentLength(request: NextRequest) {
+  const raw = request.headers.get("content-length");
+  if (!raw) return;
+  const length = Number(raw);
+  if (Number.isFinite(length) && length > IMPORT_MAX_BYTES) {
+    throw new ValidationError(
+      `Arquivo muito grande (máximo ${IMPORT_MAX_BYTES} bytes)`,
+    );
+  }
+}
+
+function assertBodySize(content: string) {
+  // Approximate UTF-16 string length check; also guard byte-ish size
+  if (content.length > IMPORT_MAX_BYTES) {
+    throw new ValidationError(
+      `Arquivo muito grande (máximo ${IMPORT_MAX_BYTES} bytes)`,
+    );
+  }
+}
+
+function assertImportRestoreRateLimit(
+  request: NextRequest,
+  userId: string,
+  bucket: "import" | "restore",
+) {
+  const limited = checkRateLimit(`${bucket}:${userId}:${clientIp(request)}`, {
+    limit: 5,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (!limited.ok) {
+    throw new RateLimitError(limited.retryAfterSec);
+  }
+}
+
 export const importExportController = {
   async exportData(user: AuthenticatedUser | null, request: NextRequest) {
     const authUser = requireUser(user);
@@ -43,6 +79,9 @@ export const importExportController = {
 
   async importData(user: AuthenticatedUser | null, request: NextRequest) {
     const authUser = requireUser(user);
+    assertImportRestoreRateLimit(request, authUser.id, "import");
+    assertContentLength(request);
+
     const contentType = request.headers.get("content-type") ?? "";
 
     let content: string;
@@ -53,7 +92,10 @@ export const importExportController = {
         throw new ValidationError("Arquivo CSV obrigatório (campo file)");
       }
       content = await file.text();
-    } else if (contentType.includes("text/csv") || contentType.includes("text/plain")) {
+    } else if (
+      contentType.includes("text/csv") ||
+      contentType.includes("text/plain")
+    ) {
       content = await request.text();
     } else {
       const body = await request.json().catch(() => null);
@@ -66,6 +108,7 @@ export const importExportController = {
       }
     }
 
+    assertBodySize(content);
     const data = await importExportService.importCsv(authUser.id, content);
     return success(data);
   },
@@ -78,26 +121,59 @@ export const importExportController = {
 
   async restore(user: AuthenticatedUser | null, request: NextRequest) {
     const authUser = requireUser(user);
+    assertImportRestoreRateLimit(request, authUser.id, "restore");
+    assertContentLength(request);
+
     const contentType = request.headers.get("content-type") ?? "";
 
-    let payload: unknown;
+    let confirm: string | null = null;
+    let backupRaw: unknown;
+
     if (contentType.includes("multipart/form-data")) {
       const form = await request.formData();
+      confirm = String(form.get("confirm") ?? "");
       const file = form.get("file");
       if (!(file instanceof File)) {
         throw new ValidationError("Arquivo de backup obrigatório (campo file)");
       }
       const text = await file.text();
+      assertBodySize(text);
       try {
-        payload = JSON.parse(text);
+        backupRaw = JSON.parse(text);
       } catch {
         throw new ValidationError("Arquivo de backup JSON inválido");
       }
     } else {
-      payload = await request.json();
+      const body = await request.json();
+      if (!body || typeof body !== "object") {
+        throw new ValidationError("Corpo JSON inválido");
+      }
+      const record = body as Record<string, unknown>;
+      confirm = record.confirm != null ? String(record.confirm) : null;
+
+      if ("backup" in record) {
+        backupRaw = record.backup;
+      } else {
+        // Legacy shape: backup fields at root (still require confirm)
+        const rest = { ...record };
+        delete rest.confirm;
+        backupRaw = rest;
+      }
+
+      const serialized = JSON.stringify(backupRaw);
+      assertBodySize(serialized);
     }
 
-    const data = await importExportService.restoreBackup(authUser.id, payload);
+    if (confirm !== "RESTORE") {
+      throw new ValidationError(
+        'Confirmação obrigatória: envie confirm com o valor "RESTORE"',
+      );
+    }
+
+    const data = await importExportService.restoreBackup(
+      authUser.id,
+      backupRaw,
+    );
     return success(data);
   },
 };

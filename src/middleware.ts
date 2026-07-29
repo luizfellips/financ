@@ -1,12 +1,37 @@
 import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 import { authConfig } from "@/lib/auth.config";
+import { safeCallbackUrl } from "@/lib/safe-callback-url";
+import {
+  checkRateLimit,
+  clientIp,
+  rateLimitResponse,
+} from "@/lib/rate-limit";
 
 const { auth } = NextAuth(authConfig);
+
+const LOGIN_RATE_PATHS = new Set([
+  "/api/auth/callback/credentials",
+  "/api/auth/signin",
+  "/api/auth/signin/credentials",
+]);
 
 export default auth((request) => {
   const { pathname } = request.nextUrl;
   const isLoggedIn = !!request.auth;
+
+  if (
+    request.method === "POST" &&
+    LOGIN_RATE_PATHS.has(pathname)
+  ) {
+    const result = checkRateLimit(`login:${clientIp(request)}`, {
+      limit: 10,
+      windowMs: 15 * 60 * 1000,
+    });
+    if (!result.ok) {
+      return rateLimitResponse(result.retryAfterSec);
+    }
+  }
 
   if (
     pathname.startsWith("/api/auth") ||
@@ -25,7 +50,10 @@ export default auth((request) => {
 
   if (!isLoggedIn && !isPublic && !pathname.startsWith("/api/")) {
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
+    loginUrl.searchParams.set(
+      "callbackUrl",
+      safeCallbackUrl(pathname + request.nextUrl.search),
+    );
     return NextResponse.redirect(loginUrl);
   }
 

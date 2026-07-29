@@ -38,6 +38,9 @@ yarn-error.log*
 .env.production.local
 !.env.example
 
+# local compose overrides (e.g. publish Postgres port)
+docker-compose.override.yml
+
 # vercel
 .vercel
 

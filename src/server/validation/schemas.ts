@@ -107,3 +107,113 @@ export const settingsSchema = z.object({
   notifyGoals: z.boolean().optional(),
   notifyBills: z.boolean().optional(),
 });
+
+export const IMPORT_MAX_BYTES = 2 * 1024 * 1024;
+export const IMPORT_MAX_CSV_ROWS = 5_000;
+
+export const backupContributionSchema = z.object({
+  amount: z.number().finite(),
+  note: z.string().max(500).nullable().optional(),
+  date: z.string().min(1),
+});
+
+export const backupAccountSchema = z.object({
+  id: z.string().min(1).max(64),
+  name: z.string().trim().min(2).max(80),
+  type: z.enum([
+    "CHECKING",
+    "SAVINGS",
+    "CREDIT",
+    "CASH",
+    "INVESTMENT",
+    "OTHER",
+  ]),
+  currency: z.string().min(3).max(8).default("BRL"),
+  initialBalance: z.number().finite(),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default("#6366f1"),
+  icon: z.string().min(1).max(40).default("Wallet"),
+  isDefault: z.boolean(),
+  archived: z.boolean(),
+});
+
+export const backupCategorySchema = z.object({
+  id: z.string().min(1).max(64),
+  name: z.string().trim().min(2).max(60),
+  type: z.enum(["INCOME", "EXPENSE"]),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default("#6366f1"),
+  icon: z.string().min(1).max(40).default("Tag"),
+  isSystem: z.boolean(),
+});
+
+export const backupTransactionSchema = z.object({
+  id: z.string().min(1).max(64).optional(),
+  accountId: z.string().min(1).max(64),
+  categoryId: z.string().min(1).max(64),
+  type: z.enum(["INCOME", "EXPENSE"]),
+  title: z.string().trim().min(2).max(120),
+  amount: z.number().finite(),
+  date: z.string().min(1),
+  notes: z.string().max(2000).nullable().optional(),
+  paymentMethod: z
+    .enum([
+      "CASH",
+      "DEBIT_CARD",
+      "CREDIT_CARD",
+      "PIX",
+      "BANK_TRANSFER",
+      "BOLETO",
+      "OTHER",
+    ])
+    .default("PIX"),
+  recurrence: z
+    .enum(["NONE", "DAILY", "WEEKLY", "MONTHLY", "YEARLY"])
+    .default("NONE"),
+  isRecurring: z.boolean().default(false),
+  installmentNumber: z.number().int().nullable().optional(),
+  installmentTotal: z.number().int().nullable().optional(),
+  installmentGroupId: z.string().max(64).nullable().optional(),
+});
+
+export const backupBudgetSchema = z.object({
+  id: z.string().min(1).max(64).optional(),
+  categoryId: z.string().min(1).max(64),
+  month: z.number().int().min(1).max(12),
+  year: z.number().int().min(2000).max(2100),
+  limitAmount: z.number().positive().finite(),
+  alertAt: z.number().int().min(1).max(100).default(80),
+});
+
+export const backupGoalSchema = z.object({
+  id: z.string().min(1).max(64).optional(),
+  name: z.string().trim().min(2).max(100),
+  targetAmount: z.number().positive().finite(),
+  savedAmount: z.number().min(0).finite().default(0),
+  deadline: z.string().nullable().optional(),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default("#22c55e"),
+  icon: z.string().min(1).max(40).default("Target"),
+  completedAt: z.string().nullable().optional(),
+  contributions: z.array(backupContributionSchema).max(500).default([]),
+});
+
+export const backupSettingsSchema = z.object({
+  theme: z.enum(["LIGHT", "DARK", "SYSTEM"]).default("SYSTEM"),
+  currency: z.string().min(3).max(8).default("BRL"),
+  locale: z.string().min(2).max(16).default("pt-BR"),
+  monthStartDay: z.number().int().min(1).max(28).default(1),
+  notifyBudget: z.boolean().default(true),
+  notifyGoals: z.boolean().default(true),
+  notifyBills: z.boolean().default(true),
+});
+
+export const backupSchema = z.object({
+  version: z.literal(1),
+  exportedAt: z.string().min(1),
+  accounts: z.array(backupAccountSchema).max(50),
+  categories: z.array(backupCategorySchema).max(200),
+  transactions: z.array(backupTransactionSchema).max(5_000),
+  budgets: z.array(backupBudgetSchema).max(500),
+  goals: z.array(backupGoalSchema).max(100),
+  settings: backupSettingsSchema.nullable().optional(),
+});
+
+export type BackupPayload = z.infer<typeof backupSchema>;

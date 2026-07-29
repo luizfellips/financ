@@ -109,10 +109,6 @@ export const budgetService = {
       budgets.map((b) => enrichBudget(userId, b)),
     );
 
-    await Promise.all(
-      enriched.map((b) => maybeNotifyBudgetThreshold(userId, b)),
-    );
-
     return enriched;
   },
 
@@ -121,9 +117,7 @@ export const budgetService = {
     if (!budget) {
       throw new NotFoundError("Orçamento não encontrado");
     }
-    const enriched = await enrichBudget(userId, budget);
-    await maybeNotifyBudgetThreshold(userId, enriched);
-    return enriched;
+    return enrichBudget(userId, budget);
   },
 
   async create(userId: string, input: BudgetInput) {

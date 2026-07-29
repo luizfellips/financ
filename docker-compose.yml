@@ -7,8 +7,8 @@ services:
       POSTGRES_USER: financ
       POSTGRES_PASSWORD: financ
       POSTGRES_DB: financ
-    ports:
-      - "5432:5432"
+    # Not published to the host — reach via the compose network or:
+    #   docker compose exec db psql -U financ -d financ
     volumes:
       - financ_pg_data:/var/lib/postgresql/data
     healthcheck:
@@ -30,10 +30,10 @@ services:
       PORT: 3000
       AUTH_TRUST_HOST: "true"
       DATABASE_URL: postgresql://financ:financ@db:5432/financ?schema=public
-      AUTH_SECRET: ${AUTH_SECRET:-change-me-to-a-long-random-string-at-least-32-chars}
+      AUTH_SECRET: ${AUTH_SECRET:?Set AUTH_SECRET to a random string of at least 32 characters}
       AUTH_URL: ${AUTH_URL:-http://localhost:3000}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-change-me-to-a-long-random-string-at-least-32-chars}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?Set NEXTAUTH_SECRET (can match AUTH_SECRET)}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
       SEED_USER_EMAIL: ${SEED_USER_EMAIL:-demo@financ.app}
       SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:-Demo@123456}

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
 import type { ApiResponse, FieldIssue, PaginationMeta } from "@/types/api";
-import { AppError } from "@/server/errors/app-error";
+import { AppError, RateLimitError } from "@/server/errors/app-error";
 
 function zodIssues(error: ZodError): FieldIssue[] {
   return error.issues.map((issue) => ({
@@ -30,15 +30,27 @@ export function failure(
     details?: FieldIssue[];
   },
   status = 400,
+  headers?: HeadersInit,
 ) {
   const body: ApiResponse<never> = {
     success: false,
     error,
   };
-  return NextResponse.json(body, { status });
+  return NextResponse.json(body, { status, headers });
 }
 
 export function handleRouteError(error: unknown) {
+  if (error instanceof RateLimitError) {
+    return failure(
+      {
+        code: error.code,
+        message: error.message,
+      },
+      429,
+      { "Retry-After": String(error.retryAfterSec) },
+    );
+  }
+
   if (error instanceof AppError) {
     return failure(
       {

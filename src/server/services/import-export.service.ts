@@ -9,6 +9,10 @@ import { transactionRepository } from "@/server/repositories/transaction.reposit
 import { budgetRepository } from "@/server/repositories/budget.repository";
 import { goalRepository } from "@/server/repositories/goal.repository";
 import { settingsRepository } from "@/server/repositories/settings.repository";
+import {
+  backupSchema,
+  IMPORT_MAX_CSV_ROWS,
+} from "@/server/validation/schemas";
 
 const csvRowSchema = z.object({
   title: z.string().trim().min(2).max(120),
@@ -44,17 +48,6 @@ const csvRowSchema = z.object({
       if (v == null || v === "") return false;
       return v === "true" || v === "1";
     }),
-});
-
-const backupSchema = z.object({
-  version: z.literal(1),
-  exportedAt: z.string(),
-  accounts: z.array(z.record(z.string(), z.unknown())),
-  categories: z.array(z.record(z.string(), z.unknown())),
-  transactions: z.array(z.record(z.string(), z.unknown())),
-  budgets: z.array(z.record(z.string(), z.unknown())),
-  goals: z.array(z.record(z.string(), z.unknown())),
-  settings: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 
 function parseDate(value: string): Date {
@@ -118,6 +111,18 @@ export const importExportService = {
         path: "csv",
         message: e,
       })));
+    }
+
+    if (data.length > IMPORT_MAX_CSV_ROWS) {
+      throw new ValidationError(
+        `CSV excede o limite de ${IMPORT_MAX_CSV_ROWS} linhas`,
+        [
+          {
+            path: "csv",
+            message: `Recebido ${data.length} linhas (máximo ${IMPORT_MAX_CSV_ROWS})`,
+          },
+        ],
+      );
     }
 
     const [accounts, categories] = await Promise.all([
@@ -383,6 +388,10 @@ export const importExportService = {
     if (!parsed.success) {
       throw new ValidationError("Arquivo de backup inválido", [
         { path: "backup", message: "Estrutura do backup não reconhecida" },
+        ...parsed.error.issues.slice(0, 20).map((issue) => ({
+          path: issue.path.join(".") || "backup",
+          message: issue.message,
+        })),
       ]);
     }
 
@@ -403,47 +412,39 @@ export const importExportService = {
       const categoryIdMap = new Map<string, string>();
 
       for (const account of backup.accounts) {
-        const oldId = String(account.id);
         const created = await tx.account.create({
           data: {
             userId,
-            name: String(account.name),
-            type: account.type as
-              | "CHECKING"
-              | "SAVINGS"
-              | "CREDIT"
-              | "CASH"
-              | "INVESTMENT"
-              | "OTHER",
-            currency: String(account.currency ?? "BRL"),
-            initialBalance: toDecimal(Number(account.initialBalance ?? 0)),
-            color: String(account.color ?? "#6366f1"),
-            icon: String(account.icon ?? "Wallet"),
-            isDefault: Boolean(account.isDefault),
-            archived: Boolean(account.archived),
+            name: account.name,
+            type: account.type,
+            currency: account.currency,
+            initialBalance: toDecimal(account.initialBalance),
+            color: account.color,
+            icon: account.icon,
+            isDefault: account.isDefault,
+            archived: account.archived,
           },
         });
-        accountIdMap.set(oldId, created.id);
+        accountIdMap.set(account.id, created.id);
       }
 
       for (const category of backup.categories) {
-        const oldId = String(category.id);
         const created = await tx.category.create({
           data: {
             userId,
-            name: String(category.name),
-            type: category.type as "INCOME" | "EXPENSE",
-            color: String(category.color ?? "#6366f1"),
-            icon: String(category.icon ?? "Tag"),
-            isSystem: Boolean(category.isSystem),
+            name: category.name,
+            type: category.type,
+            color: category.color,
+            icon: category.icon,
+            isSystem: category.isSystem,
           },
         });
-        categoryIdMap.set(oldId, created.id);
+        categoryIdMap.set(category.id, created.id);
       }
 
       for (const txRow of backup.transactions) {
-        const accountId = accountIdMap.get(String(txRow.accountId));
-        const categoryId = categoryIdMap.get(String(txRow.categoryId));
+        const accountId = accountIdMap.get(txRow.accountId);
+        const categoryId = categoryIdMap.get(txRow.categoryId);
         if (!accountId || !categoryId) continue;
 
         await tx.transaction.create({
@@ -451,53 +452,32 @@ export const importExportService = {
             userId,
             accountId,
             categoryId,
-            type: txRow.type as "INCOME" | "EXPENSE",
-            title: String(txRow.title),
-            amount: toDecimal(Number(txRow.amount)),
-            date: new Date(String(txRow.date)),
-            notes: txRow.notes != null ? String(txRow.notes) : null,
-            paymentMethod: (txRow.paymentMethod as
-              | "CASH"
-              | "DEBIT_CARD"
-              | "CREDIT_CARD"
-              | "PIX"
-              | "BANK_TRANSFER"
-              | "BOLETO"
-              | "OTHER") ?? "PIX",
-            recurrence: (txRow.recurrence as
-              | "NONE"
-              | "DAILY"
-              | "WEEKLY"
-              | "MONTHLY"
-              | "YEARLY") ?? "NONE",
-            isRecurring: Boolean(txRow.isRecurring),
-            installmentNumber:
-              txRow.installmentNumber != null
-                ? Number(txRow.installmentNumber)
-                : null,
-            installmentTotal:
-              txRow.installmentTotal != null
-                ? Number(txRow.installmentTotal)
-                : null,
-            installmentGroupId:
-              txRow.installmentGroupId != null
-                ? String(txRow.installmentGroupId)
-                : null,
+            type: txRow.type,
+            title: txRow.title,
+            amount: toDecimal(txRow.amount),
+            date: new Date(txRow.date),
+            notes: txRow.notes ?? null,
+            paymentMethod: txRow.paymentMethod,
+            recurrence: txRow.recurrence,
+            isRecurring: txRow.isRecurring,
+            installmentNumber: txRow.installmentNumber ?? null,
+            installmentTotal: txRow.installmentTotal ?? null,
+            installmentGroupId: txRow.installmentGroupId ?? null,
           },
         });
       }
 
       for (const budget of backup.budgets) {
-        const categoryId = categoryIdMap.get(String(budget.categoryId));
+        const categoryId = categoryIdMap.get(budget.categoryId);
         if (!categoryId) continue;
         await tx.budget.create({
           data: {
             userId,
             categoryId,
-            month: Number(budget.month),
-            year: Number(budget.year),
-            limitAmount: toDecimal(Number(budget.limitAmount)),
-            alertAt: Number(budget.alertAt ?? 80),
+            month: budget.month,
+            year: budget.year,
+            limitAmount: toDecimal(budget.limitAmount),
+            alertAt: budget.alertAt,
           },
         });
       }
@@ -506,31 +486,25 @@ export const importExportService = {
         const created = await tx.goal.create({
           data: {
             userId,
-            name: String(goal.name),
-            targetAmount: toDecimal(Number(goal.targetAmount)),
-            savedAmount: toDecimal(Number(goal.savedAmount ?? 0)),
-            deadline: goal.deadline ? new Date(String(goal.deadline)) : null,
-            color: String(goal.color ?? "#22c55e"),
-            icon: String(goal.icon ?? "Target"),
+            name: goal.name,
+            targetAmount: toDecimal(goal.targetAmount),
+            savedAmount: toDecimal(goal.savedAmount),
+            deadline: goal.deadline ? new Date(goal.deadline) : null,
+            color: goal.color,
+            icon: goal.icon,
             completedAt: goal.completedAt
-              ? new Date(String(goal.completedAt))
+              ? new Date(goal.completedAt)
               : null,
           },
         });
 
-        const contributions = Array.isArray(goal.contributions)
-          ? goal.contributions
-          : [];
-        for (const c of contributions) {
-          const contrib = c as Record<string, unknown>;
+        for (const c of goal.contributions) {
           await tx.goalContribution.create({
             data: {
               goalId: created.id,
-              amount: toDecimal(Number(contrib.amount)),
-              note: contrib.note != null ? String(contrib.note) : null,
-              date: contrib.date
-                ? new Date(String(contrib.date))
-                : new Date(),
+              amount: toDecimal(c.amount),
+              note: c.note ?? null,
+              date: c.date ? new Date(c.date) : new Date(),
             },
           });
         }
@@ -541,28 +515,22 @@ export const importExportService = {
           where: { userId },
           create: {
             userId,
-            theme: (backup.settings.theme as
-              | "LIGHT"
-              | "DARK"
-              | "SYSTEM") ?? "SYSTEM",
-            currency: String(backup.settings.currency ?? "BRL"),
-            locale: String(backup.settings.locale ?? "pt-BR"),
-            monthStartDay: Number(backup.settings.monthStartDay ?? 1),
-            notifyBudget: Boolean(backup.settings.notifyBudget ?? true),
-            notifyGoals: Boolean(backup.settings.notifyGoals ?? true),
-            notifyBills: Boolean(backup.settings.notifyBills ?? true),
+            theme: backup.settings.theme,
+            currency: backup.settings.currency,
+            locale: backup.settings.locale,
+            monthStartDay: backup.settings.monthStartDay,
+            notifyBudget: backup.settings.notifyBudget,
+            notifyGoals: backup.settings.notifyGoals,
+            notifyBills: backup.settings.notifyBills,
           },
           update: {
-            theme: (backup.settings.theme as
-              | "LIGHT"
-              | "DARK"
-              | "SYSTEM") ?? "SYSTEM",
-            currency: String(backup.settings.currency ?? "BRL"),
-            locale: String(backup.settings.locale ?? "pt-BR"),
-            monthStartDay: Number(backup.settings.monthStartDay ?? 1),
-            notifyBudget: Boolean(backup.settings.notifyBudget ?? true),
-            notifyGoals: Boolean(backup.settings.notifyGoals ?? true),
-            notifyBills: Boolean(backup.settings.notifyBills ?? true),
+            theme: backup.settings.theme,
+            currency: backup.settings.currency,
+            locale: backup.settings.locale,
+            monthStartDay: backup.settings.monthStartDay,
+            notifyBudget: backup.settings.notifyBudget,
+            notifyGoals: backup.settings.notifyGoals,
+            notifyBills: backup.settings.notifyBills,
           },
         });
       }

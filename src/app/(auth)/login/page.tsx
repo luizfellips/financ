@@ -28,6 +28,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { safeCallbackUrl } from "@/lib/safe-callback-url";
 
 const loginSchema = z.object({
   email: z.string().trim().email("E-mail inválido"),
@@ -39,7 +40,7 @@ type LoginValues = z.infer<typeof loginSchema>;
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"));
   const [pending, setPending] = React.useState(false);
 
   const form = useForm<LoginValues>({

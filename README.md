@@ -114,6 +114,9 @@ cp .env.example .env
 ```bash
 npm install
 cp .env.example .env
+# Defina AUTH_SECRET com ≥32 caracteres aleatórios no .env
+# Para Postgres via Compose com porta no host, crie docker-compose.override.yml
+# (veja seção Docker) ou use um Postgres local.
 docker compose up -d db
 npx prisma migrate dev
 npm run db:seed
@@ -149,19 +152,31 @@ npm run db:reset            # reset + seed
 
 ## Docker
 
-Sobe app + Postgres em um comando:
+Sobe app + Postgres em um comando (defina um `AUTH_SECRET` forte com ≥32 caracteres):
 
 ```bash
+# PowerShell
+$env:AUTH_SECRET = -join ((48..57)+(65..90)+(97..122) | Get-Random -Count 48 | ForEach-Object {[char]$_})
+docker compose up --build
+
+# bash
+export AUTH_SECRET="$(openssl rand -base64 32)"
 docker compose up --build
 ```
 
 - App: http://localhost:3000
-- Healthcheck: `GET /api/health`
+- Healthcheck: `GET /api/health` (verifica Postgres)
+- O Postgres **não** é publicado na porta do host (rede interna do Compose). Para `psql`: `docker compose exec db psql -U financ -d financ`
 - No start, o container executa `prisma migrate deploy` e sobe o Next.js standalone
 
-Somente o banco:
+Somente o banco (para desenvolvimento local com `npm run dev`, publique a porta via override):
 
 ```bash
+# docker-compose.override.yml (gitignored localmente)
+# services:
+#   db:
+#     ports:
+#       - "5432:5432"
 docker compose up -d db
 ```
 

@@ -118,7 +118,10 @@ export function useRestore() {
     mutationFn: async (payload: unknown) => {
       const { data } = await apiClient<unknown>("/api/restore", {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          confirm: "RESTORE",
+          backup: payload,
+        }),
       });
       return data;
     },
