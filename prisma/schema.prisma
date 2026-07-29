@@ -1,0 +1,270 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountType {
+  CHECKING
+  SAVINGS
+  CREDIT
+  CASH
+  INVESTMENT
+  OTHER
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum PaymentMethod {
+  CASH
+  DEBIT_CARD
+  CREDIT_CARD
+  PIX
+  BANK_TRANSFER
+  BOLETO
+  OTHER
+}
+
+enum RecurrenceInterval {
+  NONE
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum NotificationType {
+  BUDGET_EXCEEDED
+  BUDGET_WARNING
+  GOAL_REACHED
+  BILL_DUE
+  SYSTEM
+}
+
+enum ThemePreference {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  emailVerified DateTime?
+  passwordHash  String
+  image         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  accounts      Account[]
+  categories    Category[]
+  transactions  Transaction[]
+  budgets       Budget[]
+  goals         Goal[]
+  notifications Notification[]
+  settings      Settings?
+  sessions      Session[]
+  authAccounts  AuthAccount[]
+
+  @@index([email])
+}
+
+model AuthAccount {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Account {
+  id             String      @id @default(cuid())
+  userId         String
+  name           String
+  type           AccountType @default(CHECKING)
+  currency       String      @default("BRL")
+  initialBalance Decimal     @default(0) @db.Decimal(14, 2)
+  color          String      @default("#6366f1")
+  icon           String      @default("Wallet")
+  isDefault      Boolean     @default(false)
+  archived       Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@index([userId])
+  @@index([userId, isDefault])
+}
+
+model Category {
+  id        String          @id @default(cuid())
+  userId    String
+  name      String
+  type      TransactionType
+  color     String          @default("#6366f1")
+  icon      String          @default("Tag")
+  isSystem  Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  budgets      Budget[]
+
+  @@unique([userId, name, type])
+  @@index([userId])
+  @@index([userId, type])
+}
+
+model Transaction {
+  id                 String             @id @default(cuid())
+  userId             String
+  accountId          String
+  categoryId         String
+  type               TransactionType
+  title              String
+  amount             Decimal            @db.Decimal(14, 2)
+  date               DateTime
+  notes              String?            @db.Text
+  paymentMethod      PaymentMethod      @default(PIX)
+  recurrence         RecurrenceInterval @default(NONE)
+  isRecurring        Boolean            @default(false)
+  installmentNumber  Int?
+  installmentTotal   Int?
+  installmentGroupId String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account  Account  @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@index([userId, date])
+  @@index([userId, type, date])
+  @@index([userId, categoryId])
+  @@index([userId, accountId])
+  @@index([userId, isRecurring])
+  @@index([installmentGroupId])
+  @@index([title])
+}
+
+model Budget {
+  id         String   @id @default(cuid())
+  userId     String
+  categoryId String
+  month      Int
+  year       Int
+  limitAmount Decimal @db.Decimal(14, 2)
+  alertAt    Int      @default(80)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, categoryId, month, year])
+  @@index([userId, year, month])
+}
+
+model Goal {
+  id           String    @id @default(cuid())
+  userId       String
+  name         String
+  targetAmount Decimal   @db.Decimal(14, 2)
+  savedAmount  Decimal   @default(0) @db.Decimal(14, 2)
+  deadline     DateTime?
+  color        String    @default("#22c55e")
+  icon         String    @default("Target")
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contributions GoalContribution[]
+
+  @@index([userId])
+  @@index([userId, deadline])
+}
+
+model GoalContribution {
+  id        String   @id @default(cuid())
+  goalId    String
+  amount    Decimal  @db.Decimal(14, 2)
+  note      String?
+  date      DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  goal Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+
+  @@index([goalId, date])
+}
+
+model Settings {
+  id               String          @id @default(cuid())
+  userId           String          @unique
+  theme            ThemePreference @default(SYSTEM)
+  currency         String          @default("BRL")
+  locale           String          @default("pt-BR")
+  monthStartDay    Int             @default(1)
+  notifyBudget     Boolean         @default(true)
+  notifyGoals      Boolean         @default(true)
+  notifyBills      Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  read      Boolean          @default(false)
+  metadata  Json?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read, createdAt])
+}
