@@ -1,5 +1,5 @@
 import { addMonths, addDays, startOfDay } from "date-fns";
-import { getCurrentMonthYear, getMonthRange } from "@/utils/date";
+import { getCurrentMonthYear, getMonthRange, toUtcDateOnly } from "@/utils/date";
 import { mapTransaction } from "@/server/dto/mappers";
 import { accountRepository } from "@/server/repositories/account.repository";
 import { transactionRepository } from "@/server/repositories/transaction.repository";
@@ -39,9 +39,16 @@ function nextOccurrence(
   return cursor;
 }
 
+export type DashboardPeriod = {
+  month?: number;
+  year?: number;
+};
+
 export const dashboardService = {
-  async getOverview(userId: string) {
-    const { year, month } = getCurrentMonthYear();
+  async getOverview(userId: string, period: DashboardPeriod = {}) {
+    const current = getCurrentMonthYear();
+    const year = period.year ?? current.year;
+    const month = period.month ?? current.month;
     const { start, end } = getMonthRange(year, month);
 
     const [
@@ -82,11 +89,15 @@ export const dashboardService = {
           userId,
           account.id,
           "INCOME",
+          undefined,
+          end,
         ),
         transactionRepository.sumByAccountAndType(
           userId,
           account.id,
           "EXPENSE",
+          undefined,
+          end,
         ),
         transactionRepository.sumByAccountAndType(
           userId,
@@ -150,7 +161,7 @@ export const dashboardService = {
       upcomingBills.push({
         title: tx.title,
         amount: Number(tx.amount),
-        dueDate: due.toISOString(),
+        dueDate: toUtcDateOnly(due),
         category: {
           id: tx.category.id,
           name: tx.category.name,

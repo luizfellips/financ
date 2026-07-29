@@ -12,10 +12,15 @@ import {
   Wallet,
 } from "lucide-react";
 import Link from "next/link";
+import * as React from "react";
 
 import { EmptyState } from "@/components/shared/empty-state";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import {
+  MonthYearPicker,
+  type MonthYearValue,
+} from "@/components/shared/month-year-picker";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatProgress } from "@/components/shared/stat-progress";
 import { Badge } from "@/components/ui/badge";
@@ -31,17 +36,24 @@ import { useDashboard } from "@/hooks/use-dashboard";
 import { ACCOUNT_TYPE_LABELS, MONTH_LABELS } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/utils/currency";
-import { formatDate } from "@/utils/date";
+import { formatDate, getCurrentMonthYear } from "@/utils/date";
 
 export default function DashboardPage() {
-  const { data, isLoading, isError, refetch } = useDashboard();
+  const [period, setPeriod] = React.useState<MonthYearValue>(getCurrentMonthYear);
+  const { data, isLoading, isError, refetch, isFetching } = useDashboard(
+    period.month,
+    period.year,
+  );
 
-  if (isLoading) {
+  const monthLabel = MONTH_LABELS[period.month - 1] ?? "";
+
+  if (isLoading && !data) {
     return (
       <div className="space-y-6">
         <PageHeader
           title="Dashboard"
           description="Visão geral das suas finanças"
+          actions={<MonthYearPicker value={period} onChange={setPeriod} />}
         />
         <LoadingSkeleton variant="kpi" rows={4} />
         <div className="grid gap-4 lg:grid-cols-2">
@@ -74,15 +86,14 @@ export default function DashboardPage() {
     recentTransactions,
   } = data;
 
-  const monthLabel = MONTH_LABELS[kpis.month - 1] ?? "";
-
   return (
     <div className="space-y-6">
       <PageHeader
         title="Dashboard"
-        description="Visão geral das suas finanças este mês"
+        description={`Saldos e fluxo até o fim de ${monthLabel}`}
         actions={
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <MonthYearPicker value={period} onChange={setPeriod} />
             <Button asChild variant="outline" size="sm">
               <Link href="/receitas?nova=1">
                 <ArrowUpRight className="mr-1.5 h-4 w-4" />
@@ -100,7 +111,10 @@ export default function DashboardPage() {
       />
 
       <motion.div
-        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        className={cn(
+          "grid gap-4 sm:grid-cols-2 xl:grid-cols-4",
+          isFetching && "opacity-70 transition-opacity",
+        )}
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
@@ -109,7 +123,7 @@ export default function DashboardPage() {
           title="Saldo total"
           value={kpis.balance}
           icon={Wallet}
-          description="Todas as contas"
+          description={`Até ${monthLabel}`}
         />
         <KpiCard
           title="Receitas do mês"
@@ -133,7 +147,7 @@ export default function DashboardPage() {
           <div>
             <CardTitle className="text-base">Saldos das contas</CardTitle>
             <CardDescription>
-              Saldo atual e variação em {monthLabel}
+              Saldo até o fim de {monthLabel} e variação no mês
             </CardDescription>
           </div>
           <Button asChild variant="ghost" size="sm">
