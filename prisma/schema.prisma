@@ -63,15 +63,16 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-  accounts      Account[]
-  categories    Category[]
-  transactions  Transaction[]
-  budgets       Budget[]
-  goals         Goal[]
-  notifications Notification[]
-  settings      Settings?
-  sessions      Session[]
-  authAccounts  AuthAccount[]
+  accounts                   Account[]
+  categories                 Category[]
+  transactions               Transaction[]
+  budgets                    Budget[]
+  goals                      Goal[]
+  notifications              Notification[]
+  settings                   Settings?
+  sessions                   Session[]
+  authAccounts               AuthAccount[]
+  recurringProposalDecisions RecurringProposalDecision[]
 
   @@index([email])
 }
@@ -267,4 +268,29 @@ model Notification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, read, createdAt])
+}
+
+enum RecurringProposalDecisionType {
+  APPROVED
+  REJECTED
+}
+
+/// Remembers approve/reject for a computed recurring materialization proposal.
+/// Rejected proposals stay hidden; approved ones also leave a trail even if the
+/// created transaction is later deleted.
+model RecurringProposalDecision {
+  id                   String                         @id @default(cuid())
+  userId               String
+  seriesKey            String
+  sourceTransactionId  String
+  proposedDate         DateTime
+  decision             RecurringProposalDecisionType
+  createdTransactionId String?
+  createdAt            DateTime                       @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, seriesKey, proposedDate])
+  @@index([userId, decision])
+  @@index([userId, proposedDate])
 }

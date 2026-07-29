@@ -204,6 +204,40 @@ export type DashboardOverview = {
   recentTransactions: Transaction[];
 };
 
+export type RecurringProposal = {
+  id: string;
+  seriesKey: string;
+  sourceTransactionId: string;
+  type: TransactionType;
+  title: string;
+  amount: number;
+  proposedDate: string;
+  recurrence: RecurrenceInterval;
+  paymentMethod: PaymentMethod;
+  notes: string | null;
+  account: { id: string; name: string; color: string; icon: string };
+  category: {
+    id: string;
+    name: string;
+    color: string;
+    icon: string;
+    type: TransactionType;
+  };
+  lastOccurrenceDate: string;
+};
+
+export type RecurringProposalsResponse = {
+  month: number;
+  year: number;
+  proposals: RecurringProposal[];
+  summary: {
+    total: number;
+    income: number;
+    expense: number;
+    totalAmount: number;
+  };
+};
+
 export type ReportsData = {
   period: { year: number; month: number };
   monthlyCashFlow: Array<{

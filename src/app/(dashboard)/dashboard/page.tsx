@@ -338,9 +338,14 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Próximas contas</CardTitle>
-            <CardDescription>Recorrências nos próximos 30 dias</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <div>
+              <CardTitle className="text-base">Próximas contas</CardTitle>
+              <CardDescription>Recorrências nos próximos 30 dias</CardDescription>
+            </div>
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/recorrencias">Materializar</Link>
+            </Button>
           </CardHeader>
           <CardContent>
             {upcomingBills.length === 0 ? (

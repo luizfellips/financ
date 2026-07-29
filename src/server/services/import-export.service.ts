@@ -409,6 +409,7 @@ export const importExportService = {
       });
       await tx.goal.deleteMany({ where: { userId } });
       await tx.budget.deleteMany({ where: { userId } });
+      await tx.recurringProposalDecision.deleteMany({ where: { userId } });
       await tx.transaction.deleteMany({ where: { userId } });
       await tx.notification.deleteMany({ where: { userId } });
       await tx.category.deleteMany({ where: { userId } });

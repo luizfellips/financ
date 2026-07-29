@@ -1,43 +1,11 @@
-import { addMonths, addDays, startOfDay } from "date-fns";
+import { addDays, startOfDay } from "date-fns";
 import { getCurrentMonthYear, getMonthRange, toUtcDateOnly } from "@/utils/date";
+import { nextOccurrence } from "@/utils/recurrence";
 import { mapTransaction } from "@/server/dto/mappers";
 import { accountRepository } from "@/server/repositories/account.repository";
 import { transactionRepository } from "@/server/repositories/transaction.repository";
 import { budgetService } from "@/server/services/budget.service";
 import { goalService } from "@/server/services/goal.service";
-
-function nextOccurrence(
-  lastDate: Date,
-  recurrence: string,
-  from: Date,
-): Date | null {
-  let cursor = new Date(lastDate);
-  const limit = addMonths(from, 24);
-  let guard = 0;
-
-  while (cursor < from && guard < 500) {
-    guard += 1;
-    switch (recurrence) {
-      case "DAILY":
-        cursor = addDays(cursor, 1);
-        break;
-      case "WEEKLY":
-        cursor = addDays(cursor, 7);
-        break;
-      case "MONTHLY":
-        cursor = addMonths(cursor, 1);
-        break;
-      case "YEARLY":
-        cursor = addMonths(cursor, 12);
-        break;
-      default:
-        return null;
-    }
-  }
-
-  if (cursor < from || cursor > limit) return null;
-  return cursor;
-}
 
 export type DashboardPeriod = {
   month?: number;

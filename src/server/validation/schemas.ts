@@ -100,6 +100,18 @@ export const periodQuerySchema = z.object({
   year: z.coerce.number().int().min(2000).max(2100).optional(),
 });
 
+export const recurringPeriodSchema = z.object({
+  month: z.coerce.number().int().min(1).max(12).optional(),
+  year: z.coerce.number().int().min(2000).max(2100).optional(),
+});
+
+export const recurringProposalActionSchema = z.object({
+  proposalIds: z
+    .array(z.string().min(1).max(512))
+    .min(1, "Selecione ao menos uma proposta")
+    .max(100),
+});
+
 export const budgetSchema = z.object({
   categoryId: z.string().cuid(),
   month: z.coerce.number().int().min(1).max(12),

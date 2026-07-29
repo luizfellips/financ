@@ -396,6 +396,53 @@ export const transactionRepository = {
     });
   },
 
+  async findRecurring(
+    userId: string,
+  ): Promise<TransactionWithRelations[]> {
+    return prisma.transaction.findMany({
+      where: {
+        userId,
+        isRecurring: true,
+        recurrence: { not: "NONE" },
+      },
+      include: includeRelations,
+      orderBy: { date: "desc" },
+    });
+  },
+
+  async existsMatchingOnDate(
+    userId: string,
+    match: {
+      type: TransactionType;
+      title: string;
+      amount: number;
+      accountId: string;
+      categoryId: string;
+      recurrence: RecurrenceInterval;
+      paymentMethod: PaymentMethod;
+      date: Date;
+    },
+  ): Promise<boolean> {
+    const day = match.date.toISOString().slice(0, 10);
+    const dayStart = new Date(`${day}T00:00:00.000Z`);
+    const dayEnd = new Date(`${day}T23:59:59.999Z`);
+    const found = await prisma.transaction.findFirst({
+      where: {
+        userId,
+        type: match.type,
+        title: match.title,
+        amount: match.amount,
+        accountId: match.accountId,
+        categoryId: match.categoryId,
+        recurrence: match.recurrence,
+        paymentMethod: match.paymentMethod,
+        date: { gte: dayStart, lte: dayEnd },
+      },
+      select: { id: true },
+    });
+    return Boolean(found);
+  },
+
   async groupByCategory(
     userId: string,
     type: TransactionType,
