@@ -4,6 +4,7 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   FolderTree,
+  Landmark,
   LayoutDashboard,
   PiggyBank,
   Receipt,
@@ -29,6 +30,7 @@ import { useUiStore } from "@/stores/ui-store";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/contas", label: "Contas", icon: Landmark },
   { href: "/transacoes", label: "Transações", icon: Receipt },
   { href: "/receitas", label: "Receitas", icon: ArrowUpRight },
   { href: "/despesas", label: "Despesas", icon: ArrowDownLeft },

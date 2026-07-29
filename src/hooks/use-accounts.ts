@@ -33,6 +33,7 @@ type AccountInput = {
   color?: string;
   icon?: string;
   isDefault?: boolean;
+  archived?: boolean;
 };
 
 export function useCreateAccount() {
@@ -69,9 +70,12 @@ export function useUpdateAccount() {
       });
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       void queryClient.invalidateQueries({ queryKey: accountKeys.all });
-      toast.success("Conta atualizada");
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success(
+        variables.archived ? "Conta arquivada" : "Conta atualizada",
+      );
     },
     onError: (error: Error) => {
       toast.error(error.message || "Erro ao atualizar conta");
@@ -90,6 +94,7 @@ export function useDeleteAccount() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: accountKeys.all });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Conta arquivada");
     },
     onError: (error: Error) => {

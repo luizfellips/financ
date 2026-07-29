@@ -37,6 +37,19 @@ export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   OTHER: "Outra",
 };
 
+export const ACCOUNT_ICONS = [
+  "Wallet",
+  "Landmark",
+  "Building2",
+  "CreditCard",
+  "Banknote",
+  "PiggyBank",
+  "Coins",
+  "HandCoins",
+  "Vault",
+  "CircleDollarSign",
+] as const;
+
 export const MONTH_LABELS = [
   "Janeiro",
   "Fevereiro",

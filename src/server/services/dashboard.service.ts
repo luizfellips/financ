@@ -63,8 +63,21 @@ export const dashboardService = {
     ]);
 
     let totalBalance = 0;
+    const accountBalances: Array<{
+      id: string;
+      name: string;
+      type: (typeof accounts)[number]["type"];
+      color: string;
+      icon: string;
+      isDefault: boolean;
+      balance: number;
+      monthIncome: number;
+      monthExpense: number;
+      monthVariation: number;
+    }> = [];
+
     for (const account of accounts) {
-      const [income, expense] = await Promise.all([
+      const [income, expense, monthIncome, monthExpense] = await Promise.all([
         transactionRepository.sumByAccountAndType(
           userId,
           account.id,
@@ -75,8 +88,40 @@ export const dashboardService = {
           account.id,
           "EXPENSE",
         ),
+        transactionRepository.sumByAccountAndType(
+          userId,
+          account.id,
+          "INCOME",
+          start,
+          end,
+        ),
+        transactionRepository.sumByAccountAndType(
+          userId,
+          account.id,
+          "EXPENSE",
+          start,
+          end,
+        ),
       ]);
-      totalBalance += Number(account.initialBalance) + income - expense;
+      const balance =
+        Math.round(
+          (Number(account.initialBalance) + income - expense) * 100,
+        ) / 100;
+      const monthVariation =
+        Math.round((monthIncome - monthExpense) * 100) / 100;
+      totalBalance += balance;
+      accountBalances.push({
+        id: account.id,
+        name: account.name,
+        type: account.type,
+        color: account.color,
+        icon: account.icon,
+        isDefault: account.isDefault,
+        balance,
+        monthIncome,
+        monthExpense,
+        monthVariation,
+      });
     }
 
     const savings = monthlyIncome - monthlyExpense;
@@ -134,6 +179,7 @@ export const dashboardService = {
         month,
         year,
       },
+      accountBalances,
       upcomingBills: upcomingBills.slice(0, 10),
       budgetProgress: budgets.map((b) => ({
         id: b.id,

@@ -37,6 +37,7 @@ export type Account = {
   type: AccountType;
   currency: string;
   initialBalance: number;
+  balance?: number;
   color: string;
   icon: string;
   isDefault: boolean;
@@ -158,6 +159,18 @@ export type DashboardOverview = {
     month: number;
     year: number;
   };
+  accountBalances: Array<{
+    id: string;
+    name: string;
+    type: AccountType;
+    color: string;
+    icon: string;
+    isDefault: boolean;
+    balance: number;
+    monthIncome: number;
+    monthExpense: number;
+    monthVariation: number;
+  }>;
   upcomingBills: Array<{
     title: string;
     amount: number;

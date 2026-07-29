@@ -1,11 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
+import * as LucideIcons from "lucide-react";
 import {
   ArrowDownLeft,
   ArrowUpRight,
   Plus,
   Target,
+  TrendingDown,
   TrendingUp,
   Wallet,
 } from "lucide-react";
@@ -26,6 +28,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useDashboard } from "@/hooks/use-dashboard";
+import { ACCOUNT_TYPE_LABELS, MONTH_LABELS } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/utils/currency";
 import { formatDate } from "@/utils/date";
@@ -62,8 +65,16 @@ export default function DashboardPage() {
     );
   }
 
-  const { kpis, upcomingBills, budgetProgress, goalProgress, recentTransactions } =
-    data;
+  const {
+    kpis,
+    accountBalances = [],
+    upcomingBills,
+    budgetProgress,
+    goalProgress,
+    recentTransactions,
+  } = data;
+
+  const monthLabel = MONTH_LABELS[kpis.month - 1] ?? "";
 
   return (
     <div className="space-y-6">
@@ -116,6 +127,112 @@ export default function DashboardPage() {
           icon={TrendingUp}
         />
       </motion.div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-base">Saldos das contas</CardTitle>
+            <CardDescription>
+              Saldo atual e variação em {monthLabel}
+            </CardDescription>
+          </div>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/contas">Gerenciar</Link>
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {accountBalances.length === 0 ? (
+            <EmptyState
+              className="border-0 py-8"
+              title="Nenhuma conta"
+              description="Cadastre suas contas para acompanhar os saldos."
+              action={
+                <Button asChild size="sm">
+                  <Link href="/contas?nova=1">Nova conta</Link>
+                </Button>
+              }
+            />
+          ) : (
+            <ul className="divide-y divide-border">
+              {accountBalances.map((account) => {
+                const Icon =
+                  (LucideIcons as unknown as Record<
+                    string,
+                    LucideIcons.LucideIcon
+                  >)[account.icon] ?? LucideIcons.Wallet;
+                const variationPositive = account.monthVariation > 0;
+                const variationNegative = account.monthVariation < 0;
+                return (
+                  <li
+                    key={account.id}
+                    className="flex items-center justify-between gap-3 py-3"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                        style={{
+                          backgroundColor: `${account.color}22`,
+                          color: account.color,
+                        }}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-sm font-medium">
+                            {account.name}
+                          </p>
+                          {account.isDefault ? (
+                            <Badge
+                              variant="secondary"
+                              className="text-[10px]"
+                            >
+                              Padrão
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {ACCOUNT_TYPE_LABELS[account.type]}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p
+                        className={cn(
+                          "text-sm font-semibold tabular-nums",
+                          account.balance < 0 && "text-destructive",
+                        )}
+                      >
+                        {formatCurrency(account.balance)}
+                      </p>
+                      <p
+                        className={cn(
+                          "flex items-center justify-end gap-0.5 text-xs tabular-nums",
+                          variationPositive &&
+                            "text-emerald-600 dark:text-emerald-400",
+                          variationNegative && "text-destructive",
+                          !variationPositive &&
+                            !variationNegative &&
+                            "text-muted-foreground",
+                        )}
+                      >
+                        {variationPositive ? (
+                          <TrendingUp className="h-3 w-3" />
+                        ) : null}
+                        {variationNegative ? (
+                          <TrendingDown className="h-3 w-3" />
+                        ) : null}
+                        {variationPositive ? "+" : ""}
+                        {formatCurrency(account.monthVariation)} no mês
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>

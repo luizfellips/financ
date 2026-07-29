@@ -329,9 +329,23 @@ export const transactionRepository = {
     userId: string,
     accountId: string,
     type: TransactionType,
+    dateFrom?: Date,
+    dateTo?: Date,
   ): Promise<number> {
     const result = await prisma.transaction.aggregate({
-      where: { userId, accountId, type },
+      where: {
+        userId,
+        accountId,
+        type,
+        ...(dateFrom || dateTo
+          ? {
+              date: {
+                ...(dateFrom ? { gte: dateFrom } : {}),
+                ...(dateTo ? { lte: dateTo } : {}),
+              },
+            }
+          : {}),
+      },
       _sum: { amount: true },
     });
     return result._sum.amount ? Number(result._sum.amount) : 0;
