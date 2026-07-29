@@ -30,11 +30,11 @@ import {
   TRANSACTION_TYPE_LABELS,
 } from "@/lib/labels";
 import { cn } from "@/lib/utils";
-import type { Category, TransactionType } from "@/types/models";
+import type { Category } from "@/types/models";
 
 const schema = z.object({
   name: z.string().trim().min(2, "Nome obrigatório").max(60),
-  type: z.enum(["INCOME", "EXPENSE"]),
+  type: z.enum(["INCOME", "EXPENSE", "TRANSFER"]),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
   icon: z.string().min(1).max(40),
 });
@@ -43,7 +43,7 @@ export type CategoryFormValues = z.infer<typeof schema>;
 
 type CategoryFormProps = {
   category?: Category | null;
-  defaultType?: TransactionType;
+  defaultType?: "INCOME" | "EXPENSE";
   onSubmit: (values: CategoryFormValues) => Promise<void> | void;
   onCancel?: () => void;
 };
@@ -73,7 +73,14 @@ export function CategoryForm({
     resolver: zodResolver(schema),
     defaultValues: {
       name: category?.name ?? "",
-      type: category?.type ?? defaultType,
+      type:
+        category?.type === "TRANSFER"
+          ? "TRANSFER"
+          : category?.type === "INCOME"
+            ? "INCOME"
+            : defaultType === "INCOME"
+              ? "INCOME"
+              : "EXPENSE",
       color: category?.color ?? CATEGORY_COLORS[0],
       icon: category?.icon ?? "Tag",
     },
@@ -136,13 +143,17 @@ export function CategoryForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {(
-                      Object.keys(TRANSACTION_TYPE_LABELS) as TransactionType[]
-                    ).map((key) => (
-                      <SelectItem key={key} value={key}>
-                        {TRANSACTION_TYPE_LABELS[key]}
+                    {category?.type === "TRANSFER" ? (
+                      <SelectItem value="TRANSFER">
+                        {TRANSACTION_TYPE_LABELS.TRANSFER}
                       </SelectItem>
-                    ))}
+                    ) : (
+                      (["INCOME", "EXPENSE"] as const).map((key) => (
+                        <SelectItem key={key} value={key}>
+                          {TRANSACTION_TYPE_LABELS[key]}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />

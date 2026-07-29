@@ -70,10 +70,10 @@ export default function ReportsPage() {
         description={`${MONTH_LABELS[period.month - 1]} de ${period.year} · visão dos últimos 12 meses`}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Receitas do mês</CardDescription>
+            <CardDescription>Entrou no mês</CardDescription>
             <CardTitle className="text-2xl tabular-nums">
               {formatCurrency(incomeVsExpenses.income)}
             </CardTitle>
@@ -81,7 +81,7 @@ export default function ReportsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Despesas do mês</CardDescription>
+            <CardDescription>Gastou no mês</CardDescription>
             <CardTitle className="text-2xl tabular-nums">
               {formatCurrency(incomeVsExpenses.expense)}
             </CardTitle>
@@ -89,7 +89,15 @@ export default function ReportsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Saldo do mês</CardDescription>
+            <CardDescription>Movimentou no mês</CardDescription>
+            <CardTitle className="text-2xl tabular-nums">
+              {formatCurrency(incomeVsExpenses.transfers)}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Economia do mês</CardDescription>
             <CardTitle className="text-2xl tabular-nums">
               {formatCurrency(incomeVsExpenses.difference)}
             </CardTitle>

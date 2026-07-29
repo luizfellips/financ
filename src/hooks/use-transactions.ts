@@ -29,7 +29,8 @@ export const transactionKeys = {
 
 type TransactionInput = {
   accountId: string;
-  categoryId: string;
+  transferToAccountId?: string | null;
+  categoryId?: string;
   type: TransactionType;
   title: string;
   amount: number;
@@ -85,6 +86,7 @@ function invalidateTransactionQueries(queryClient: ReturnType<typeof useQueryCli
   void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   void queryClient.invalidateQueries({ queryKey: ["budgets"] });
   void queryClient.invalidateQueries({ queryKey: ["reports"] });
+  void queryClient.invalidateQueries({ queryKey: ["accounts"] });
 }
 
 export function useCreateTransaction() {

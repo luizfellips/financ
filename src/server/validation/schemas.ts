@@ -62,30 +62,153 @@ export const categorySchema = z.object({
   icon: z.string().min(1).max(40).default("Tag"),
 });
 
-export const transactionSchema = z.object({
-  accountId: z.string().cuid(),
-  categoryId: z.string().cuid(),
-  type: z.enum(["INCOME", "EXPENSE"]),
-  title: z.string().trim().min(2).max(120),
-  amount: z.coerce.number().positive("Valor deve ser positivo").finite(),
-  date: calendarDateSchema,
-  notes: z.string().max(2000).optional().nullable(),
-  paymentMethod: z
-    .enum(["CASH", "DEBIT_CARD", "CREDIT_CARD", "PIX", "BANK_TRANSFER", "BOLETO", "OTHER"])
-    .default("PIX"),
-  recurrence: z.enum(["NONE", "DAILY", "WEEKLY", "MONTHLY", "YEARLY"]).default("NONE"),
-  isRecurring: z.boolean().optional().default(false),
-  installmentTotal: z.coerce.number().int().min(1).max(48).optional().nullable(),
-});
+export const transactionSchema = z
+  .object({
+    accountId: z.string().cuid(),
+    transferToAccountId: z.string().cuid().optional().nullable(),
+    categoryId: z.string().cuid().optional(),
+    type: z.enum(["INCOME", "EXPENSE", "TRANSFER"]),
+    title: z.string().trim().min(2).max(120),
+    amount: z.coerce.number().positive("Valor deve ser positivo").finite(),
+    date: calendarDateSchema,
+    notes: z.string().max(2000).optional().nullable(),
+    paymentMethod: z
+      .enum([
+        "CASH",
+        "DEBIT_CARD",
+        "CREDIT_CARD",
+        "PIX",
+        "BANK_TRANSFER",
+        "BOLETO",
+        "OTHER",
+      ])
+      .default("PIX"),
+    recurrence: z
+      .enum(["NONE", "DAILY", "WEEKLY", "MONTHLY", "YEARLY"])
+      .default("NONE"),
+    isRecurring: z.boolean().optional().default(false),
+    installmentTotal: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(48)
+      .optional()
+      .nullable(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.type === "TRANSFER") {
+      if (!data.transferToAccountId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Selecione a conta de destino",
+          path: ["transferToAccountId"],
+        });
+      } else if (data.transferToAccountId === data.accountId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Conta de destino deve ser diferente da origem",
+          path: ["transferToAccountId"],
+        });
+      }
+      if (data.installmentTotal != null && data.installmentTotal > 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Transferências não suportam parcelamento",
+          path: ["installmentTotal"],
+        });
+      }
+    } else {
+      if (!data.categoryId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Selecione uma categoria",
+          path: ["categoryId"],
+        });
+      }
+      if (data.transferToAccountId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Conta de destino só é permitida em transferências",
+          path: ["transferToAccountId"],
+        });
+      }
+    }
+  });
 
-export const transactionUpdateSchema = transactionSchema.partial().extend({
-  accountId: z.string().cuid().optional(),
-  categoryId: z.string().cuid().optional(),
-  type: z.enum(["INCOME", "EXPENSE"]).optional(),
-});
+export const transactionUpdateSchema = z
+  .object({
+    accountId: z.string().cuid().optional(),
+    transferToAccountId: z.string().cuid().optional().nullable(),
+    categoryId: z.string().cuid().optional(),
+    type: z.enum(["INCOME", "EXPENSE", "TRANSFER"]).optional(),
+    title: z.string().trim().min(2).max(120).optional(),
+    amount: z.coerce.number().positive("Valor deve ser positivo").finite().optional(),
+    date: calendarDateSchema.optional(),
+    notes: z.string().max(2000).optional().nullable(),
+    paymentMethod: z
+      .enum([
+        "CASH",
+        "DEBIT_CARD",
+        "CREDIT_CARD",
+        "PIX",
+        "BANK_TRANSFER",
+        "BOLETO",
+        "OTHER",
+      ])
+      .optional(),
+    recurrence: z
+      .enum(["NONE", "DAILY", "WEEKLY", "MONTHLY", "YEARLY"])
+      .optional(),
+    isRecurring: z.boolean().optional(),
+    installmentTotal: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(48)
+      .optional()
+      .nullable(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.type === "TRANSFER") {
+      if (
+        data.transferToAccountId !== undefined &&
+        data.transferToAccountId === null
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Selecione a conta de destino",
+          path: ["transferToAccountId"],
+        });
+      }
+      if (
+        data.accountId &&
+        data.transferToAccountId &&
+        data.accountId === data.transferToAccountId
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Conta de destino deve ser diferente da origem",
+          path: ["transferToAccountId"],
+        });
+      }
+      if (data.installmentTotal != null && data.installmentTotal > 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Transferências não suportam parcelamento",
+          path: ["installmentTotal"],
+        });
+      }
+    } else if (data.type !== undefined && data.transferToAccountId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Conta de destino só é permitida em transferências",
+        path: ["transferToAccountId"],
+      });
+    }
+  });
 
 export const transactionFilterSchema = paginationSchema.extend({
-  type: z.enum(["INCOME", "EXPENSE", "ALL"]).optional().default("ALL"),
+  type: z.enum(["INCOME", "EXPENSE", "TRANSFER", "ALL"]).optional().default("ALL"),
   categoryId: z.string().cuid().optional(),
   accountId: z.string().cuid().optional(),
   month: z.coerce.number().int().min(1).max(12).optional(),
@@ -194,7 +317,7 @@ export const backupAccountSchema = z.object({
 export const backupCategorySchema = z.object({
   id: z.string().min(1).max(64),
   name: z.string().trim().min(2).max(60),
-  type: z.enum(["INCOME", "EXPENSE"]),
+  type: z.enum(["INCOME", "EXPENSE", "TRANSFER"]),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default("#6366f1"),
   icon: z.string().min(1).max(40).default("Tag"),
   isSystem: z.boolean(),
@@ -203,8 +326,9 @@ export const backupCategorySchema = z.object({
 export const backupTransactionSchema = z.object({
   id: z.string().min(1).max(64).optional(),
   accountId: z.string().min(1).max(64),
+  transferToAccountId: z.string().min(1).max(64).nullable().optional(),
   categoryId: z.string().min(1).max(64),
-  type: z.enum(["INCOME", "EXPENSE"]),
+  type: z.enum(["INCOME", "EXPENSE", "TRANSFER"]),
   title: z.string().trim().min(2).max(120),
   amount: z.number().finite(),
   date: z.string().min(1),

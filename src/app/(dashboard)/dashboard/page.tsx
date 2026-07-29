@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import * as LucideIcons from "lucide-react";
 import {
   ArrowDownLeft,
+  ArrowLeftRight,
   ArrowUpRight,
   Plus,
   Target,
@@ -101,6 +102,12 @@ export default function DashboardPage() {
                 Receita
               </Link>
             </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/transacoes?transferir=1">
+                <ArrowLeftRight className="mr-1.5 h-4 w-4" />
+                Transferir
+              </Link>
+            </Button>
             <Button asChild size="sm">
               <Link href="/despesas?nova=1">
                 <Plus className="mr-1.5 h-4 w-4" />
@@ -113,7 +120,7 @@ export default function DashboardPage() {
 
       <motion.div
         className={cn(
-          "grid gap-4 sm:grid-cols-2 xl:grid-cols-4",
+          "grid gap-4 sm:grid-cols-2 xl:grid-cols-5",
           isFetching && "opacity-70 transition-opacity",
         )}
         initial={{ opacity: 0, y: 8 }}
@@ -127,19 +134,28 @@ export default function DashboardPage() {
           description={`Até ${monthLabel}`}
         />
         <KpiCard
-          title="Receitas do mês"
+          title="Entrou"
           value={kpis.monthlyIncome}
           icon={ArrowUpRight}
+          description="Renda real do mês"
         />
         <KpiCard
-          title="Despesas do mês"
+          title="Gastou"
           value={kpis.monthlyExpense}
           icon={ArrowDownLeft}
+          description="Despesas reais do mês"
         />
         <KpiCard
-          title="Economia do mês"
+          title="Movimentou"
+          value={kpis.monthlyTransfers}
+          icon={ArrowLeftRight}
+          description="Entre contas"
+        />
+        <KpiCard
+          title="Economia"
           value={kpis.monthlySavings}
           icon={TrendingUp}
+          description="Entrou − Gastou"
         />
       </motion.div>
 
@@ -409,12 +425,22 @@ export default function DashboardPage() {
                       <div className="flex items-center gap-2">
                         <p className="truncate text-sm font-medium">{tx.title}</p>
                         <Badge variant="secondary" className="text-[10px]">
-                          {tx.type === "INCOME" ? "Receita" : "Despesa"}
+                          {tx.type === "INCOME"
+                            ? "Receita"
+                            : tx.type === "TRANSFER"
+                              ? "Transferência"
+                              : "Despesa"}
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {formatDate(tx.date)}
-                        {tx.category ? ` · ${tx.category.name}` : ""}
+                        {tx.type === "TRANSFER" &&
+                        tx.account &&
+                        tx.transferToAccount
+                          ? ` · ${tx.account.name} → ${tx.transferToAccount.name}`
+                          : tx.category
+                            ? ` · ${tx.category.name}`
+                            : ""}
                       </p>
                     </div>
                     <TransactionAmount

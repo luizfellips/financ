@@ -31,7 +31,7 @@ async function withBalance(
   account: Awaited<ReturnType<typeof accountRepository.findById>> & object,
   asOf: Date,
 ) {
-  const [income, expense] = await Promise.all([
+  const [income, expense, transferOut, transferIn] = await Promise.all([
     transactionRepository.sumByAccountAndType(
       userId,
       account!.id,
@@ -46,11 +46,17 @@ async function withBalance(
       undefined,
       asOf,
     ),
+    transactionRepository.sumTransfersOut(userId, account!.id, undefined, asOf),
+    transactionRepository.sumTransfersIn(userId, account!.id, undefined, asOf),
   ]);
   const mapped = mapAccount(account!);
   return {
     ...mapped,
-    balance: mapped.initialBalance + income - expense,
+    balance:
+      Math.round(
+        (mapped.initialBalance + income - expense - transferOut + transferIn) *
+          100,
+      ) / 100,
   };
 }
 

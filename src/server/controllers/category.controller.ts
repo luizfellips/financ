@@ -11,7 +11,9 @@ export const categoryController = {
     const authUser = requireUser(user);
     const typeParam = request.nextUrl.searchParams.get("type");
     const type =
-      typeParam === "INCOME" || typeParam === "EXPENSE"
+      typeParam === "INCOME" ||
+      typeParam === "EXPENSE" ||
+      typeParam === "TRANSFER"
         ? (typeParam as TransactionType)
         : undefined;
     const data = await categoryService.list(authUser.id, type);

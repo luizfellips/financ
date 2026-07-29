@@ -23,6 +23,7 @@ export const dashboardService = {
       accounts,
       monthlyIncome,
       monthlyExpense,
+      monthlyTransfers,
       recentTransactions,
       budgets,
       goals,
@@ -31,6 +32,7 @@ export const dashboardService = {
       accountRepository.findManyByUser(userId),
       transactionRepository.sumByType(userId, "INCOME", start, end),
       transactionRepository.sumByType(userId, "EXPENSE", start, end),
+      transactionRepository.sumByType(userId, "TRANSFER", start, end),
       transactionRepository.findRecent(userId, 8),
       budgetService.list(userId, { month, year }),
       goalService.list(userId),
@@ -52,7 +54,14 @@ export const dashboardService = {
     }> = [];
 
     for (const account of accounts) {
-      const [income, expense, monthIncome, monthExpense] = await Promise.all([
+      const [
+        income,
+        expense,
+        transferOut,
+        transferIn,
+        monthIncome,
+        monthExpense,
+      ] = await Promise.all([
         transactionRepository.sumByAccountAndType(
           userId,
           account.id,
@@ -64,6 +73,18 @@ export const dashboardService = {
           userId,
           account.id,
           "EXPENSE",
+          undefined,
+          end,
+        ),
+        transactionRepository.sumTransfersOut(
+          userId,
+          account.id,
+          undefined,
+          end,
+        ),
+        transactionRepository.sumTransfersIn(
+          userId,
+          account.id,
           undefined,
           end,
         ),
@@ -84,7 +105,12 @@ export const dashboardService = {
       ]);
       const balance =
         Math.round(
-          (Number(account.initialBalance) + income - expense) * 100,
+          (Number(account.initialBalance) +
+            income -
+            expense -
+            transferOut +
+            transferIn) *
+            100,
         ) / 100;
       const monthVariation =
         Math.round((monthIncome - monthExpense) * 100) / 100;
@@ -153,6 +179,7 @@ export const dashboardService = {
         balance: Math.round(totalBalance * 100) / 100,
         monthlyIncome,
         monthlyExpense,
+        monthlyTransfers,
         monthlySavings: Math.round(savings * 100) / 100,
         cashflow: Math.round(cashflow * 100) / 100,
         month,

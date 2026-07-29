@@ -16,9 +16,10 @@ export const reportService = {
     const monthlyCashFlow = await Promise.all(
       months.map(async ({ year: y, month: m, label }) => {
         const { start, end } = getMonthRange(y, m);
-        const [income, expense] = await Promise.all([
+        const [income, expense, transfers] = await Promise.all([
           transactionRepository.sumByType(userId, "INCOME", start, end),
           transactionRepository.sumByType(userId, "EXPENSE", start, end),
+          transactionRepository.sumByType(userId, "TRANSFER", start, end),
         ]);
         return {
           year: y,
@@ -26,6 +27,7 @@ export const reportService = {
           label,
           income,
           expense,
+          transfers,
           savings: Math.round((income - expense) * 100) / 100,
           cashflow: Math.round((income - expense) * 100) / 100,
         };
@@ -35,6 +37,8 @@ export const reportService = {
     const currentIncome = monthlyCashFlow[monthlyCashFlow.length - 1]?.income ?? 0;
     const currentExpense =
       monthlyCashFlow[monthlyCashFlow.length - 1]?.expense ?? 0;
+    const currentTransfers =
+      monthlyCashFlow[monthlyCashFlow.length - 1]?.transfers ?? 0;
 
     const categoryGroups = await transactionRepository.groupByCategory(
       userId,
@@ -102,9 +106,10 @@ export const reportService = {
 
     const yearStart = new Date(year, 0, 1);
     const yearEnd = new Date(year, 11, 31, 23, 59, 59, 999);
-    const [yearIncome, yearExpense] = await Promise.all([
+    const [yearIncome, yearExpense, yearTransfers] = await Promise.all([
       transactionRepository.sumByType(userId, "INCOME", yearStart, yearEnd),
       transactionRepository.sumByType(userId, "EXPENSE", yearStart, yearEnd),
+      transactionRepository.sumByType(userId, "TRANSFER", yearStart, yearEnd),
     ]);
 
     const accountCount = await prisma.account.count({
@@ -120,9 +125,11 @@ export const reportService = {
       incomeVsExpenses: {
         income: currentIncome,
         expense: currentExpense,
+        transfers: currentTransfers,
         difference: Math.round((currentIncome - currentExpense) * 100) / 100,
         yearIncome,
         yearExpense,
+        yearTransfers,
         yearSavings: Math.round((yearIncome - yearExpense) * 100) / 100,
       },
       expensesByCategory,

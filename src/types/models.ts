@@ -1,6 +1,6 @@
 import type { PaginationMeta } from "@/types/api";
 
-export type TransactionType = "INCOME" | "EXPENSE";
+export type TransactionType = "INCOME" | "EXPENSE" | "TRANSFER";
 export type AccountType =
   | "CHECKING"
   | "SAVINGS"
@@ -62,6 +62,7 @@ export type Transaction = {
   id: string;
   userId: string;
   accountId: string;
+  transferToAccountId: string | null;
   categoryId: string;
   type: TransactionType;
   title: string;
@@ -77,6 +78,7 @@ export type Transaction = {
   createdAt: string;
   updatedAt: string;
   account?: Pick<Account, "id" | "name" | "color" | "icon">;
+  transferToAccount?: Pick<Account, "id" | "name" | "color" | "icon"> | null;
   category?: Pick<Category, "id" | "name" | "color" | "icon" | "type">;
 };
 
@@ -161,6 +163,7 @@ export type DashboardOverview = {
     balance: number;
     monthlyIncome: number;
     monthlyExpense: number;
+    monthlyTransfers: number;
     monthlySavings: number;
     cashflow: number;
     month: number;
@@ -254,15 +257,18 @@ export type ReportsData = {
     label: string;
     income: number;
     expense: number;
+    transfers: number;
     savings: number;
     cashflow: number;
   }>;
   incomeVsExpenses: {
     income: number;
     expense: number;
+    transfers: number;
     difference: number;
     yearIncome: number;
     yearExpense: number;
+    yearTransfers: number;
     yearSavings: number;
   };
   expensesByCategory: Array<{

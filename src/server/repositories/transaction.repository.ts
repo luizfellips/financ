@@ -10,11 +10,18 @@ import { prisma } from "@/lib/prisma";
 
 export type TransactionWithRelations = Transaction & {
   account: { id: string; name: string; color: string; icon: string };
+  transferToAccount: {
+    id: string;
+    name: string;
+    color: string;
+    icon: string;
+  } | null;
   category: { id: string; name: string; color: string; icon: string; type: TransactionType };
 };
 
 export type CreateTransactionData = {
   accountId: string;
+  transferToAccountId?: string | null;
   categoryId: string;
   type: TransactionType;
   title: string;
@@ -73,7 +80,19 @@ function buildWhere(
     where.categoryId = filters.categoryId;
   }
   if (filters.accountId) {
-    where.accountId = filters.accountId;
+    where.AND = [
+      ...(Array.isArray(where.AND)
+        ? where.AND
+        : where.AND
+          ? [where.AND]
+          : []),
+      {
+        OR: [
+          { accountId: filters.accountId },
+          { transferToAccountId: filters.accountId },
+        ],
+      },
+    ];
   }
   if (filters.recurring === "true") {
     where.isRecurring = true;
@@ -114,6 +133,9 @@ function buildWhere(
 
 const includeRelations = {
   account: { select: { id: true, name: true, color: true, icon: true } },
+  transferToAccount: {
+    select: { id: true, name: true, color: true, icon: true },
+  },
   category: {
     select: { id: true, name: true, color: true, icon: true, type: true },
   },
@@ -162,6 +184,7 @@ export const transactionRepository = {
       data: {
         userId,
         accountId: data.accountId,
+        transferToAccountId: data.transferToAccountId ?? null,
         categoryId: data.categoryId,
         type: data.type,
         title: data.title,
@@ -187,6 +210,7 @@ export const transactionRepository = {
       data: items.map((data) => ({
         userId,
         accountId: data.accountId,
+        transferToAccountId: data.transferToAccountId ?? null,
         categoryId: data.categoryId,
         type: data.type,
         title: data.title,
@@ -214,6 +238,7 @@ export const transactionRepository = {
           data: {
             userId,
             accountId: data.accountId,
+            transferToAccountId: data.transferToAccountId ?? null,
             categoryId: data.categoryId,
             type: data.type,
             title: data.title,
@@ -251,6 +276,9 @@ export const transactionRepository = {
       where: { id },
       data: {
         ...(data.accountId !== undefined ? { accountId: data.accountId } : {}),
+        ...(data.transferToAccountId !== undefined
+          ? { transferToAccountId: data.transferToAccountId }
+          : {}),
         ...(data.categoryId !== undefined
           ? { categoryId: data.categoryId }
           : {}),
@@ -337,6 +365,46 @@ export const transactionRepository = {
         userId,
         accountId,
         type,
+        ...(dateFrom || dateTo
+          ? {
+              date: {
+                ...(dateFrom ? { gte: dateFrom } : {}),
+                ...(dateTo ? { lte: dateTo } : {}),
+              },
+            }
+          : {}),
+      },
+      _sum: { amount: true },
+    });
+    return result._sum.amount ? Number(result._sum.amount) : 0;
+  },
+
+  async sumTransfersOut(
+    userId: string,
+    accountId: string,
+    dateFrom?: Date,
+    dateTo?: Date,
+  ): Promise<number> {
+    return this.sumByAccountAndType(
+      userId,
+      accountId,
+      "TRANSFER",
+      dateFrom,
+      dateTo,
+    );
+  },
+
+  async sumTransfersIn(
+    userId: string,
+    accountId: string,
+    dateFrom?: Date,
+    dateTo?: Date,
+  ): Promise<number> {
+    const result = await prisma.transaction.aggregate({
+      where: {
+        userId,
+        transferToAccountId: accountId,
+        type: "TRANSFER",
         ...(dateFrom || dateTo
           ? {
               date: {

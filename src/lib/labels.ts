@@ -8,6 +8,7 @@ import type {
 export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
   INCOME: "Receita",
   EXPENSE: "Despesa",
+  TRANSFER: "Transferência",
 };
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
@@ -97,4 +98,5 @@ export const CATEGORY_ICONS = [
   "Smartphone",
   "Zap",
   "Target",
+  "ArrowLeftRight",
 ] as const;

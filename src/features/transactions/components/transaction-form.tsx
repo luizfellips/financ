@@ -37,7 +37,6 @@ import type {
   PaymentMethod,
   RecurrenceInterval,
   Transaction,
-  TransactionType,
 } from "@/types/models";
 
 const schema = z.object({
@@ -66,7 +65,7 @@ export type TransactionFormValues = z.infer<typeof schema>;
 
 type TransactionFormProps = {
   defaultValues?: Partial<TransactionFormValues>;
-  lockedType?: TransactionType;
+  lockedType?: "INCOME" | "EXPENSE";
   showInstallments?: boolean;
   transaction?: Transaction | null;
   onSubmit: (values: TransactionFormValues) => Promise<void> | void;
@@ -85,16 +84,19 @@ export function TransactionForm({
 }: TransactionFormProps) {
   const [pending, setPending] = React.useState(false);
   const { data: accounts = [] } = useAccounts();
+
+  const initialType: "INCOME" | "EXPENSE" =
+    lockedType ??
+    (transaction?.type === "INCOME" || transaction?.type === "EXPENSE"
+      ? transaction.type
+      : defaultValues?.type ?? "EXPENSE");
+
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       accountId: transaction?.accountId ?? defaultValues?.accountId ?? "",
       categoryId: transaction?.categoryId ?? defaultValues?.categoryId ?? "",
-      type:
-        lockedType ??
-        transaction?.type ??
-        defaultValues?.type ??
-        "EXPENSE",
+      type: initialType,
       title: transaction?.title ?? defaultValues?.title ?? "",
       amount: transaction?.amount ?? defaultValues?.amount ?? 0,
       date:
@@ -121,9 +123,7 @@ export function TransactionForm({
 
   const type = form.watch("type");
   const recurrence = form.watch("recurrence");
-  const { data: categories = [] } = useCategories(
-    lockedType ?? (type as TransactionType),
-  );
+  const { data: categories = [] } = useCategories(lockedType ?? type);
 
   React.useEffect(() => {
     if (lockedType) form.setValue("type", lockedType);
@@ -181,9 +181,7 @@ export function TransactionForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {(
-                        Object.keys(TRANSACTION_TYPE_LABELS) as TransactionType[]
-                      ).map((key) => (
+                      {(["INCOME", "EXPENSE"] as const).map((key) => (
                         <SelectItem key={key} value={key}>
                           {TRANSACTION_TYPE_LABELS[key]}
                         </SelectItem>

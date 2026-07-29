@@ -19,6 +19,7 @@ enum AccountType {
 enum TransactionType {
   INCOME
   EXPENSE
+  TRANSFER
 }
 
 enum PaymentMethod {
@@ -129,8 +130,9 @@ model Account {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions Transaction[]
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions       Transaction[] @relation("TransactionAccount")
+  incomingTransfers  Transaction[] @relation("TransferToAccount")
 
   @@index([userId])
   @@index([userId, isDefault])
@@ -157,32 +159,35 @@ model Category {
 }
 
 model Transaction {
-  id                 String             @id @default(cuid())
-  userId             String
-  accountId          String
-  categoryId         String
-  type               TransactionType
-  title              String
-  amount             Decimal            @db.Decimal(14, 2)
-  date               DateTime
-  notes              String?            @db.Text
-  paymentMethod      PaymentMethod      @default(PIX)
-  recurrence         RecurrenceInterval @default(NONE)
-  isRecurring        Boolean            @default(false)
-  installmentNumber  Int?
-  installmentTotal   Int?
-  installmentGroupId String?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  id                   String             @id @default(cuid())
+  userId               String
+  accountId            String
+  transferToAccountId  String?
+  categoryId           String
+  type                 TransactionType
+  title                String
+  amount               Decimal            @db.Decimal(14, 2)
+  date                 DateTime
+  notes                String?            @db.Text
+  paymentMethod        PaymentMethod      @default(PIX)
+  recurrence           RecurrenceInterval @default(NONE)
+  isRecurring          Boolean            @default(false)
+  installmentNumber    Int?
+  installmentTotal     Int?
+  installmentGroupId   String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  account  Account  @relation(fields: [accountId], references: [id], onDelete: Restrict)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account           Account  @relation("TransactionAccount", fields: [accountId], references: [id], onDelete: Restrict)
+  transferToAccount Account? @relation("TransferToAccount", fields: [transferToAccountId], references: [id], onDelete: Restrict)
+  category          Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
   @@index([userId, date])
   @@index([userId, type, date])
   @@index([userId, categoryId])
   @@index([userId, accountId])
+  @@index([userId, transferToAccountId])
   @@index([userId, isRecurring])
   @@index([installmentGroupId])
   @@index([title])

@@ -104,4 +104,47 @@ describe("validation schemas", () => {
       expect(result.data.date.toISOString()).toBe("2026-07-29T12:00:00.000Z");
     }
   });
+
+  it("accepts transfer without categoryId", () => {
+    const result = transactionSchema.safeParse({
+      accountId: "clxxxxxxxxxxxxxxxxxxxxxxxxx",
+      transferToAccountId: "clzzzzzzzzzzzzzzzzzzzzzzzzz",
+      type: "TRANSFER",
+      title: "Entre contas",
+      amount: 250,
+      date: "2026-07-29",
+      paymentMethod: "PIX",
+      recurrence: "NONE",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects transfer to the same account", () => {
+    const result = transactionSchema.safeParse({
+      accountId: "clxxxxxxxxxxxxxxxxxxxxxxxxx",
+      transferToAccountId: "clxxxxxxxxxxxxxxxxxxxxxxxxx",
+      type: "TRANSFER",
+      title: "Entre contas",
+      amount: 250,
+      date: "2026-07-29",
+      paymentMethod: "PIX",
+      recurrence: "NONE",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects income with transferToAccountId", () => {
+    const result = transactionSchema.safeParse({
+      accountId: "clxxxxxxxxxxxxxxxxxxxxxxxxx",
+      transferToAccountId: "clzzzzzzzzzzzzzzzzzzzzzzzzz",
+      categoryId: "clyyyyyyyyyyyyyyyyyyyyyyyyy",
+      type: "INCOME",
+      title: "Salário",
+      amount: 1000,
+      date: "2026-07-29",
+      paymentMethod: "PIX",
+      recurrence: "NONE",
+    });
+    expect(result.success).toBe(false);
+  });
 });

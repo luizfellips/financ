@@ -16,6 +16,12 @@ export const DEFAULT_EXPENSE_CATEGORIES = [
   { name: "Outros", color: "#64748b", icon: "MoreHorizontal" },
 ] as const;
 
+export const DEFAULT_TRANSFER_CATEGORY = {
+  name: "Transferência",
+  color: "#64748b",
+  icon: "ArrowLeftRight",
+} as const;
+
 export function buildDefaultCategories() {
   return [
     ...DEFAULT_INCOME_CATEGORIES.map((c) => ({
@@ -32,6 +38,13 @@ export function buildDefaultCategories() {
       icon: c.icon,
       isSystem: true,
     })),
+    {
+      name: DEFAULT_TRANSFER_CATEGORY.name,
+      type: "TRANSFER" as const,
+      color: DEFAULT_TRANSFER_CATEGORY.color,
+      icon: DEFAULT_TRANSFER_CATEGORY.icon,
+      isSystem: true,
+    },
   ];
 }
 

@@ -44,7 +44,7 @@ export const userRepository = {
       };
       categories: Array<{
         name: string;
-        type: "INCOME" | "EXPENSE";
+        type: "INCOME" | "EXPENSE" | "TRANSFER";
         color: string;
         icon: string;
         isSystem: boolean;

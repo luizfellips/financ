@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeftRight, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
 
@@ -32,12 +32,16 @@ import {
   type TransactionFormValues,
 } from "@/features/transactions/components/transaction-form";
 import {
+  TransferForm,
+  type TransferFormValues,
+} from "@/features/transactions/components/transfer-form";
+import {
   useCreateTransaction,
   useDeleteTransaction,
   useTransactions,
   useUpdateTransaction,
 } from "@/hooks/use-transactions";
-import { PAYMENT_METHOD_LABELS } from "@/lib/labels";
+import { PAYMENT_METHOD_LABELS, TRANSACTION_TYPE_LABELS } from "@/lib/labels";
 import type { Transaction, TransactionFilters } from "@/types/models";
 import { formatDate } from "@/utils/date";
 
@@ -55,6 +59,7 @@ function TransactionsPageContent() {
     search: "",
   });
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [transferOpen, setTransferOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Transaction | null>(null);
   const [deleting, setDeleting] = React.useState<Transaction | null>(null);
 
@@ -67,6 +72,11 @@ function TransactionsPageContent() {
     if (searchParams.get("nova") === "1") {
       setEditing(null);
       setDialogOpen(true);
+      router.replace("/transacoes");
+    }
+    if (searchParams.get("transferir") === "1") {
+      setEditing(null);
+      setTransferOpen(true);
       router.replace("/transacoes");
     }
   }, [searchParams, router]);
@@ -84,7 +94,11 @@ function TransactionsPageContent() {
       cell: (row) => (
         <div className="min-w-[140px]">
           <p className="font-medium">{row.title}</p>
-          {row.notes ? (
+          {row.type === "TRANSFER" && row.account && row.transferToAccount ? (
+            <p className="truncate text-xs text-muted-foreground">
+              {row.account.name} → {row.transferToAccount.name}
+            </p>
+          ) : row.notes ? (
             <p className="truncate text-xs text-muted-foreground">{row.notes}</p>
           ) : null}
         </div>
@@ -93,14 +107,25 @@ function TransactionsPageContent() {
     {
       id: "category",
       header: "Categoria",
-      cell: (row) => row.category?.name ?? "—",
+      cell: (row) =>
+        row.type === "TRANSFER"
+          ? "—"
+          : (row.category?.name ?? "—"),
     },
     {
       id: "type",
       header: "Tipo",
       cell: (row) => (
-        <Badge variant={row.type === "INCOME" ? "default" : "secondary"}>
-          {row.type === "INCOME" ? "Receita" : "Despesa"}
+        <Badge
+          variant={
+            row.type === "INCOME"
+              ? "default"
+              : row.type === "TRANSFER"
+                ? "outline"
+                : "secondary"
+          }
+        >
+          {TRANSACTION_TYPE_LABELS[row.type]}
         </Badge>
       ),
     },
@@ -133,7 +158,11 @@ function TransactionsPageContent() {
             <DropdownMenuItem
               onClick={() => {
                 setEditing(row);
-                setDialogOpen(true);
+                if (row.type === "TRANSFER") {
+                  setTransferOpen(true);
+                } else {
+                  setDialogOpen(true);
+                }
               }}
             >
               <Pencil className="mr-2 h-4 w-4" />
@@ -162,6 +191,16 @@ function TransactionsPageContent() {
     setEditing(null);
   }
 
+  async function handleTransferSubmit(values: TransferFormValues) {
+    if (editing) {
+      await updateMutation.mutateAsync({ id: editing.id, ...values });
+    } else {
+      await createMutation.mutateAsync(values);
+    }
+    setTransferOpen(false);
+    setEditing(null);
+  }
+
   const meta = data?.meta;
   const items = data?.data ?? [];
 
@@ -169,17 +208,29 @@ function TransactionsPageContent() {
     <div className="space-y-6">
       <PageHeader
         title="Transações"
-        description="Todas as suas movimentações financeiras"
+        description="Receitas, despesas e transferências entre contas"
         actions={
-          <Button
-            onClick={() => {
-              setEditing(null);
-              setDialogOpen(true);
-            }}
-          >
-            <Plus className="mr-1.5 h-4 w-4" />
-            Nova transação
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditing(null);
+                setTransferOpen(true);
+              }}
+            >
+              <ArrowLeftRight className="mr-1.5 h-4 w-4" />
+              Transferir
+            </Button>
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setDialogOpen(true);
+              }}
+            >
+              <Plus className="mr-1.5 h-4 w-4" />
+              Nova transação
+            </Button>
+          </div>
         }
       />
 
@@ -192,15 +243,27 @@ function TransactionsPageContent() {
           title="Nenhuma transação encontrada"
           description="Ajuste os filtros ou registre uma nova movimentação."
           action={
-            <Button
-              onClick={() => {
-                setEditing(null);
-                setDialogOpen(true);
-              }}
-            >
-              <Plus className="mr-1.5 h-4 w-4" />
-              Nova transação
-            </Button>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setEditing(null);
+                  setTransferOpen(true);
+                }}
+              >
+                <ArrowLeftRight className="mr-1.5 h-4 w-4" />
+                Transferir
+              </Button>
+              <Button
+                onClick={() => {
+                  setEditing(null);
+                  setDialogOpen(true);
+                }}
+              >
+                <Plus className="mr-1.5 h-4 w-4" />
+                Nova transação
+              </Button>
+            </div>
           }
         />
       ) : (
@@ -269,6 +332,32 @@ function TransactionsPageContent() {
               setEditing(null);
             }}
             onSubmit={handleSubmit}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={transferOpen}
+        onOpenChange={(open) => {
+          setTransferOpen(open);
+          if (!open) setEditing(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {editing ? "Editar transferência" : "Transferir entre contas"}
+            </DialogTitle>
+          </DialogHeader>
+          <TransferForm
+            key={editing?.id ?? "new-transfer"}
+            transaction={editing}
+            onCancel={() => {
+              setTransferOpen(false);
+              setEditing(null);
+            }}
+            onSubmit={handleTransferSubmit}
+            submitLabel={editing ? "Salvar" : "Transferir"}
           />
         </DialogContent>
       </Dialog>

@@ -79,6 +79,8 @@ export const importExportService = {
       date: toUtcDateOnly(tx.date),
       account: tx.account.name,
       accountId: tx.accountId,
+      transferToAccount: tx.transferToAccount?.name ?? "",
+      transferToAccountId: tx.transferToAccountId ?? "",
       category: tx.category.name,
       categoryId: tx.categoryId,
       notes: tx.notes ?? "",
@@ -332,6 +334,7 @@ export const importExportService = {
       transactions: transactions.map((tx) => ({
         id: tx.id,
         accountId: tx.accountId,
+        transferToAccountId: tx.transferToAccountId,
         categoryId: tx.categoryId,
         type: tx.type,
         title: tx.title,
@@ -458,10 +461,15 @@ export const importExportService = {
         const categoryId = categoryIdMap.get(txRow.categoryId);
         if (!accountId || !categoryId) continue;
 
+        const transferToAccountId = txRow.transferToAccountId
+          ? (accountIdMap.get(txRow.transferToAccountId) ?? null)
+          : null;
+
         await tx.transaction.create({
           data: {
             userId,
             accountId,
+            transferToAccountId,
             categoryId,
             type: txRow.type,
             title: txRow.title,

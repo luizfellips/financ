@@ -99,6 +99,7 @@ function CategoriesPageContent() {
           <TabsTrigger value="ALL">Todas</TabsTrigger>
           <TabsTrigger value="INCOME">Receitas</TabsTrigger>
           <TabsTrigger value="EXPENSE">Despesas</TabsTrigger>
+          <TabsTrigger value="TRANSFER">Transferências</TabsTrigger>
         </TabsList>
       </Tabs>
 
