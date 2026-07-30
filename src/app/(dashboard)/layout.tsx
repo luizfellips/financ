@@ -20,7 +20,7 @@ export default async function DashboardLayout({
       <AppSidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <AppTopbar />
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        <main className="flex-1 px-4 py-6 pb-24 sm:px-6 md:pb-6 lg:px-8">
           <div className="mx-auto w-full max-w-7xl space-y-6">{children}</div>
         </main>
       </div>

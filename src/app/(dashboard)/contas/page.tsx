@@ -8,11 +8,13 @@ import * as React from "react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { MobileFab } from "@/components/shared/mobile-fab";
 import {
   MonthYearPicker,
   type MonthYearValue,
 } from "@/components/shared/month-year-picker";
 import { PageHeader } from "@/components/shared/page-header";
+import { ResponsiveOverlay } from "@/components/shared/responsive-overlay";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,12 +23,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -96,6 +92,7 @@ function AccountsPageContent() {
           <div className="flex flex-wrap items-center gap-2">
             <MonthYearPicker value={period} onChange={setPeriod} />
             <Button
+              className="hidden md:inline-flex"
               onClick={() => {
                 setEditing(null);
                 setDialogOpen(true);
@@ -241,30 +238,32 @@ function AccountsPageContent() {
         </div>
       )}
 
-      <Dialog
+      <MobileFab
+        label="Nova conta"
+        onClick={() => {
+          setEditing(null);
+          setDialogOpen(true);
+        }}
+      />
+
+      <ResponsiveOverlay
         open={dialogOpen}
         onOpenChange={(open) => {
           setDialogOpen(open);
           if (!open) setEditing(null);
         }}
+        title={editing ? "Editar conta" : "Nova conta"}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editing ? "Editar conta" : "Nova conta"}
-            </DialogTitle>
-          </DialogHeader>
-          <AccountForm
-            key={editing?.id ?? "new"}
-            account={editing}
-            onCancel={() => {
-              setDialogOpen(false);
-              setEditing(null);
-            }}
-            onSubmit={handleSubmit}
-          />
-        </DialogContent>
-      </Dialog>
+        <AccountForm
+          key={editing?.id ?? "new"}
+          account={editing}
+          onCancel={() => {
+            setDialogOpen(false);
+            setEditing(null);
+          }}
+          onSubmit={handleSubmit}
+        />
+      </ResponsiveOverlay>
 
       <ConfirmDialog
         open={Boolean(archiving)}

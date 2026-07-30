@@ -15,7 +15,9 @@ import * as React from "react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { MobileFab } from "@/components/shared/mobile-fab";
 import { PageHeader } from "@/components/shared/page-header";
+import { ResponsiveOverlay } from "@/components/shared/responsive-overlay";
 import { StatProgress } from "@/components/shared/stat-progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,12 +28,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -133,6 +129,7 @@ function GoalsPageContent() {
         description="Acompanhe objetivos e contribuições"
         actions={
           <Button
+            className="hidden md:inline-flex"
             onClick={() => {
               setEditing(null);
               setDialogOpen(true);
@@ -350,83 +347,78 @@ function GoalsPageContent() {
         </div>
       )}
 
-      <Dialog
+      <MobileFab
+        label="Nova meta"
+        onClick={() => {
+          setEditing(null);
+          setDialogOpen(true);
+        }}
+      />
+
+      <ResponsiveOverlay
         open={dialogOpen}
         onOpenChange={(open) => {
           setDialogOpen(open);
           if (!open) setEditing(null);
         }}
+        title={editing ? "Editar meta" : "Nova meta"}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editing ? "Editar meta" : "Nova meta"}</DialogTitle>
-          </DialogHeader>
-          <GoalForm
-            key={editing?.id ?? "new"}
-            goal={editing}
-            onCancel={() => {
-              setDialogOpen(false);
-              setEditing(null);
-            }}
-            onSubmit={handleSubmit}
-          />
-        </DialogContent>
-      </Dialog>
+        <GoalForm
+          key={editing?.id ?? "new"}
+          goal={editing}
+          onCancel={() => {
+            setDialogOpen(false);
+            setEditing(null);
+          }}
+          onSubmit={handleSubmit}
+        />
+      </ResponsiveOverlay>
 
-      <Dialog
+      <ResponsiveOverlay
         open={contributeOpen}
         onOpenChange={(open) => {
           setContributeOpen(open);
           if (!open) setContributing(null);
         }}
+        title={
+          contributing ? `Contribuir — ${contributing.name}` : "Contribuir"
+        }
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              Contribuir{contributing ? ` — ${contributing.name}` : ""}
-            </DialogTitle>
-          </DialogHeader>
-          <ContributionForm
-            key={contributing?.id ?? "contribute"}
-            onCancel={() => {
-              setContributeOpen(false);
-              setContributing(null);
-            }}
-            onSubmit={handleContribute}
-          />
-        </DialogContent>
-      </Dialog>
+        <ContributionForm
+          key={contributing?.id ?? "contribute"}
+          onCancel={() => {
+            setContributeOpen(false);
+            setContributing(null);
+          }}
+          onSubmit={handleContribute}
+        />
+      </ResponsiveOverlay>
 
-      <Dialog
+      <ResponsiveOverlay
         open={Boolean(editingContribution)}
         onOpenChange={(open) => {
           if (!open) setEditingContribution(null);
         }}
+        title={
+          editingContribution
+            ? `Editar contribuição — ${editingContribution.goal.name}`
+            : "Editar contribuição"
+        }
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              Editar contribuição
-              {editingContribution
-                ? ` — ${editingContribution.goal.name}`
-                : ""}
-            </DialogTitle>
-          </DialogHeader>
-          {editingContribution ? (
-            <ContributionForm
-              key={editingContribution.contribution.id}
-              submitLabel="Salvar"
-              defaultValues={{
-                amount: editingContribution.contribution.amount,
-                note: editingContribution.contribution.note,
-                date: editingContribution.contribution.date,
-              }}
-              onCancel={() => setEditingContribution(null)}
-              onSubmit={handleUpdateContribution}
-            />
-          ) : null}
-        </DialogContent>
-      </Dialog>
+        {editingContribution ? (
+          <ContributionForm
+            key={editingContribution.contribution.id}
+            submitLabel="Salvar"
+            defaultValues={{
+              amount: editingContribution.contribution.amount,
+              note: editingContribution.contribution.note,
+              date: editingContribution.contribution.date,
+            }}
+            onCancel={() => setEditingContribution(null)}
+            onSubmit={handleUpdateContribution}
+          />
+        ) : null}
+      </ResponsiveOverlay>
 
       <ConfirmDialog
         open={Boolean(deleting)}

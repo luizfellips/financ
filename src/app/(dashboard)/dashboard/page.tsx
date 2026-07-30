@@ -13,11 +13,13 @@ import {
   Wallet,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import * as React from "react";
 
 import { EmptyState } from "@/components/shared/empty-state";
 import { KpiCard } from "@/components/shared/kpi-card";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { MobileFab } from "@/components/shared/mobile-fab";
 import {
   MonthYearPicker,
   type MonthYearValue,
@@ -41,6 +43,7 @@ import { formatCurrency } from "@/utils/currency";
 import { formatDate, getCurrentMonthYear } from "@/utils/date";
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [period, setPeriod] = React.useState<MonthYearValue>(getCurrentMonthYear);
   const { data, isLoading, isError, refetch, isFetching } = useDashboard(
     period.month,
@@ -96,26 +99,49 @@ export default function DashboardPage() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <MonthYearPicker value={period} onChange={setPeriod} />
-            <Button asChild variant="outline" size="sm">
-              <Link href="/receitas?nova=1">
-                <ArrowUpRight className="mr-1.5 h-4 w-4" />
-                Receita
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="sm">
-              <Link href="/transacoes?transferir=1">
-                <ArrowLeftRight className="mr-1.5 h-4 w-4" />
-                Transferir
-              </Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link href="/despesas?nova=1">
-                <Plus className="mr-1.5 h-4 w-4" />
-                Despesa
-              </Link>
-            </Button>
+            <div className="hidden flex-wrap items-center gap-2 md:flex">
+              <Button asChild variant="outline" size="sm">
+                <Link href="/receitas?nova=1">
+                  <ArrowUpRight className="mr-1.5 h-4 w-4" />
+                  Receita
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/transacoes?transferir=1">
+                  <ArrowLeftRight className="mr-1.5 h-4 w-4" />
+                  Transferir
+                </Link>
+              </Button>
+              <Button asChild size="sm">
+                <Link href="/despesas?nova=1">
+                  <Plus className="mr-1.5 h-4 w-4" />
+                  Despesa
+                </Link>
+              </Button>
+            </div>
           </div>
         }
+      />
+
+      <MobileFab
+        label="Ações rápidas"
+        actions={[
+          {
+            label: "Nova receita",
+            icon: <ArrowUpRight className="h-4 w-4" />,
+            onSelect: () => router.push("/receitas?nova=1"),
+          },
+          {
+            label: "Transferir",
+            icon: <ArrowLeftRight className="h-4 w-4" />,
+            onSelect: () => router.push("/transacoes?transferir=1"),
+          },
+          {
+            label: "Nova despesa",
+            icon: <Plus className="h-4 w-4" />,
+            onSelect: () => router.push("/despesas?nova=1"),
+          },
+        ]}
       />
 
       <motion.div

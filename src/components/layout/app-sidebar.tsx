@@ -6,6 +6,7 @@ import {
   FolderTree,
   Landmark,
   LayoutDashboard,
+  Menu,
   PiggyBank,
   Receipt,
   Repeat,
@@ -142,11 +143,11 @@ export function MobileSidebarTrigger() {
     <Button
       variant="ghost"
       size="icon"
-      className="md:hidden"
+      className="size-11 md:hidden"
       aria-label="Abrir menu"
       onClick={() => setSidebarOpen(true)}
     >
-      <Wallet className="h-4 w-4" />
+      <Menu className="h-5 w-5" />
     </Button>
   );
 }
