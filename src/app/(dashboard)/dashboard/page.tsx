@@ -127,16 +127,19 @@ export default function DashboardPage() {
         label="Ações rápidas"
         actions={[
           {
+            id: "income",
             label: "Nova receita",
             icon: <ArrowUpRight className="h-4 w-4" />,
             onSelect: () => router.push("/receitas?nova=1"),
           },
           {
+            id: "transfer",
             label: "Transferir",
             icon: <ArrowLeftRight className="h-4 w-4" />,
             onSelect: () => router.push("/transacoes?transferir=1"),
           },
           {
+            id: "expense",
             label: "Nova despesa",
             icon: <Plus className="h-4 w-4" />,
             onSelect: () => router.push("/despesas?nova=1"),

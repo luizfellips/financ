@@ -230,7 +230,7 @@ function TransactionsPageContent() {
             onClick={() =>
               setFilters((prev) => ({
                 ...prev,
-                page: Math.max(1, (prev.page ?? 1) - 1),
+                page: Math.max(1, meta.page - 1),
               }))
             }
           >
@@ -243,7 +243,7 @@ function TransactionsPageContent() {
             onClick={() =>
               setFilters((prev) => ({
                 ...prev,
-                page: (prev.page ?? 1) + 1,
+                page: Math.min(meta.totalPages, meta.page + 1),
               }))
             }
           >
@@ -345,6 +345,7 @@ function TransactionsPageContent() {
         label="Nova movimentação"
         actions={[
           {
+            id: "new-transaction",
             label: "Nova transação",
             icon: <Plus className="h-4 w-4" />,
             onSelect: () => {
@@ -353,6 +354,7 @@ function TransactionsPageContent() {
             },
           },
           {
+            id: "transfer",
             label: "Transferir",
             icon: <ArrowLeftRight className="h-4 w-4" />,
             onSelect: () => {

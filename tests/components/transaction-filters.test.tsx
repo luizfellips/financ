@@ -34,7 +34,7 @@ describe("TransactionFiltersBar", () => {
       />,
     );
 
-    const search = screen.getByPlaceholderText(/buscar/i);
+    const [search] = screen.getAllByPlaceholderText(/buscar/i);
     await userEvent.type(search, "aluguel");
     expect(onChange).toHaveBeenCalled();
   });

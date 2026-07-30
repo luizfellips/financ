@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export type MobileFabAction = {
+  id: string;
   label: string;
   icon?: React.ReactNode;
   onSelect: () => void;
@@ -63,7 +64,7 @@ export function MobileFab({
         <DropdownMenuContent align="end" side="top" className="mb-2 w-52">
           {actions.map((action) => (
             <DropdownMenuItem
-              key={action.label}
+              key={action.id}
               onClick={action.onSelect}
               className="gap-2"
             >

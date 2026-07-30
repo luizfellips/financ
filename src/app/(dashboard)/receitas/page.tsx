@@ -176,7 +176,10 @@ function IncomesPageContent() {
             size="sm"
             disabled={meta.page <= 1}
             onClick={() =>
-              setFilters((p) => ({ ...p, page: (p.page ?? 1) - 1 }))
+              setFilters((p) => ({
+                ...p,
+                page: Math.max(1, meta.page - 1),
+              }))
             }
           >
             Anterior
@@ -186,7 +189,10 @@ function IncomesPageContent() {
             size="sm"
             disabled={meta.page >= meta.totalPages}
             onClick={() =>
-              setFilters((p) => ({ ...p, page: (p.page ?? 1) + 1 }))
+              setFilters((p) => ({
+                ...p,
+                page: Math.min(meta.totalPages, meta.page + 1),
+              }))
             }
           >
             Próxima
