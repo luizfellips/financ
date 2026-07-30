@@ -8,33 +8,29 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { MobileFab } from "@/components/shared/mobile-fab";
 import { PageHeader } from "@/components/shared/page-header";
+import { ResponsiveOverlay } from "@/components/shared/responsive-overlay";
 import { TransactionAmount } from "@/components/shared/transaction-amount";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  TransactionFiltersBar,
-} from "@/features/transactions/components/transaction-filters";
+import { TransactionFiltersBar } from "@/features/transactions/components/transaction-filters";
 import {
   TransactionForm,
   type TransactionFormValues,
 } from "@/features/transactions/components/transaction-form";
+import { TransactionMobileCard } from "@/features/transactions/components/transaction-mobile-card";
 import {
   TransferForm,
   type TransferFormValues,
 } from "@/features/transactions/components/transfer-form";
+import { useIsMobile } from "@/hooks/use-media-query";
 import {
   useCreateTransaction,
   useDeleteTransaction,
@@ -48,6 +44,7 @@ import { formatDate } from "@/utils/date";
 function TransactionsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isMobile = useIsMobile();
 
   const [filters, setFilters] = React.useState<TransactionFilters>({
     page: 1,
@@ -81,6 +78,21 @@ function TransactionsPageContent() {
     }
   }, [searchParams, router]);
 
+  function openEdit(row: Transaction) {
+    setEditing(row);
+    if (row.type === "TRANSFER") {
+      setTransferOpen(true);
+    } else {
+      setDialogOpen(true);
+    }
+  }
+
+  function openConvert(row: Transaction) {
+    setEditing(row);
+    setDialogOpen(false);
+    setTransferOpen(true);
+  }
+
   const columns: DataTableColumn<Transaction>[] = [
     {
       id: "date",
@@ -108,9 +120,7 @@ function TransactionsPageContent() {
       id: "category",
       header: "Categoria",
       cell: (row) =>
-        row.type === "TRANSFER"
-          ? "—"
-          : (row.category?.name ?? "—"),
+        row.type === "TRANSFER" ? "—" : (row.category?.name ?? "—"),
     },
     {
       id: "type",
@@ -132,7 +142,8 @@ function TransactionsPageContent() {
     {
       id: "payment",
       header: "Pagamento",
-      cell: (row) => PAYMENT_METHOD_LABELS[row.paymentMethod] ?? row.paymentMethod,
+      cell: (row) =>
+        PAYMENT_METHOD_LABELS[row.paymentMethod] ?? row.paymentMethod,
     },
     {
       id: "amount",
@@ -155,27 +166,12 @@ function TransactionsPageContent() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() => {
-                setEditing(row);
-                if (row.type === "TRANSFER") {
-                  setTransferOpen(true);
-                } else {
-                  setDialogOpen(true);
-                }
-              }}
-            >
+            <DropdownMenuItem onClick={() => openEdit(row)}>
               <Pencil className="mr-2 h-4 w-4" />
               Editar
             </DropdownMenuItem>
             {row.type !== "TRANSFER" ? (
-              <DropdownMenuItem
-                onClick={() => {
-                  setEditing(row);
-                  setDialogOpen(false);
-                  setTransferOpen(true);
-                }}
-              >
+              <DropdownMenuItem onClick={() => openConvert(row)}>
                 <ArrowLeftRight className="mr-2 h-4 w-4" />
                 Converter em transferência
               </DropdownMenuItem>
@@ -220,13 +216,50 @@ function TransactionsPageContent() {
   const meta = data?.meta;
   const items = data?.data ?? [];
 
+  const pagination =
+    meta && meta.totalPages > 1 ? (
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          Página {meta.page} de {meta.totalPages} · {meta.total} registro(s)
+        </p>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={meta.page <= 1}
+            onClick={() =>
+              setFilters((prev) => ({
+                ...prev,
+                page: Math.max(1, meta.page - 1),
+              }))
+            }
+          >
+            Anterior
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={meta.page >= meta.totalPages}
+            onClick={() =>
+              setFilters((prev) => ({
+                ...prev,
+                page: Math.min(meta.totalPages, meta.page + 1),
+              }))
+            }
+          >
+            Próxima
+          </Button>
+        </div>
+      </div>
+    ) : null;
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Transações"
         description="Receitas, despesas e transferências entre contas"
         actions={
-          <div className="flex flex-wrap gap-2">
+          <div className="hidden flex-wrap gap-2 md:flex">
             <Button
               variant="outline"
               onClick={() => {
@@ -253,7 +286,7 @@ function TransactionsPageContent() {
       <TransactionFiltersBar value={filters} onChange={setFilters} />
 
       {isLoading ? (
-        <LoadingSkeleton variant="table" rows={8} />
+        <LoadingSkeleton variant={isMobile ? "list" : "table"} rows={8} />
       ) : items.length === 0 ? (
         <EmptyState
           title="Nenhuma transação encontrada"
@@ -282,6 +315,21 @@ function TransactionsPageContent() {
             </div>
           }
         />
+      ) : isMobile ? (
+        <>
+          <div className="flex flex-col gap-2">
+            {items.map((row) => (
+              <TransactionMobileCard
+                key={row.id}
+                transaction={row}
+                onEdit={openEdit}
+                onDelete={setDeleting}
+                onConvertToTransfer={openConvert}
+              />
+            ))}
+          </div>
+          {pagination}
+        </>
       ) : (
         <>
           <DataTable
@@ -289,100 +337,82 @@ function TransactionsPageContent() {
             data={items}
             getRowId={(row) => row.id}
           />
-          {meta && meta.totalPages > 1 ? (
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm text-muted-foreground">
-                Página {meta.page} de {meta.totalPages} · {meta.total} registro(s)
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={meta.page <= 1}
-                  onClick={() =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      page: Math.max(1, (prev.page ?? 1) - 1),
-                    }))
-                  }
-                >
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={meta.page >= meta.totalPages}
-                  onClick={() =>
-                    setFilters((prev) => ({
-                      ...prev,
-                      page: (prev.page ?? 1) + 1,
-                    }))
-                  }
-                >
-                  Próxima
-                </Button>
-              </div>
-            </div>
-          ) : null}
+          {pagination}
         </>
       )}
 
-      <Dialog
+      <MobileFab
+        label="Nova movimentação"
+        actions={[
+          {
+            id: "new-transaction",
+            label: "Nova transação",
+            icon: <Plus className="h-4 w-4" />,
+            onSelect: () => {
+              setEditing(null);
+              setDialogOpen(true);
+            },
+          },
+          {
+            id: "transfer",
+            label: "Transferir",
+            icon: <ArrowLeftRight className="h-4 w-4" />,
+            onSelect: () => {
+              setEditing(null);
+              setTransferOpen(true);
+            },
+          },
+        ]}
+      />
+
+      <ResponsiveOverlay
         open={dialogOpen}
         onOpenChange={(open) => {
           setDialogOpen(open);
           if (!open) setEditing(null);
         }}
+        title={editing ? "Editar transação" : "Nova transação"}
+        desktopClassName="sm:max-w-3xl"
       >
-        <DialogContent className="sm:max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>
-              {editing ? "Editar transação" : "Nova transação"}
-            </DialogTitle>
-          </DialogHeader>
-          <TransactionForm
-            key={editing?.id ?? "new"}
-            transaction={editing}
-            onCancel={() => {
-              setDialogOpen(false);
-              setEditing(null);
-            }}
-            onSubmit={handleSubmit}
-          />
-        </DialogContent>
-      </Dialog>
+        <TransactionForm
+          key={editing?.id ?? "new"}
+          transaction={editing}
+          onCancel={() => {
+            setDialogOpen(false);
+            setEditing(null);
+          }}
+          onSubmit={handleSubmit}
+        />
+      </ResponsiveOverlay>
 
-      <Dialog
+      <ResponsiveOverlay
         open={transferOpen}
         onOpenChange={(open) => {
           setTransferOpen(open);
           if (!open) setEditing(null);
         }}
+        title={
+          converting
+            ? "Converter em transferência"
+            : editing
+              ? "Editar transferência"
+              : "Transferir entre contas"
+        }
+        desktopClassName="sm:max-w-lg"
       >
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {converting
-                ? "Converter em transferência"
-                : editing
-                  ? "Editar transferência"
-                  : "Transferir entre contas"}
-            </DialogTitle>
-          </DialogHeader>
-          <TransferForm
-            key={editing?.id ?? "new-transfer"}
-            transaction={editing}
-            onCancel={() => {
-              setTransferOpen(false);
-              setEditing(null);
-            }}
-            onSubmit={handleTransferSubmit}
-            submitLabel={
-              converting ? "Converter" : editing ? "Salvar" : "Transferir"
-            }
-          />
-        </DialogContent>
-      </Dialog>
+        <TransferForm
+          key={editing?.id ?? "new-transfer"}
+          transaction={editing}
+          onCancel={() => {
+            setTransferOpen(false);
+            setEditing(null);
+          }}
+          onSubmit={handleTransferSubmit}
+          submitLabel={
+            converting ? "Converter" : editing ? "Salvar" : "Transferir"
+          }
+        />
+      </ResponsiveOverlay>
 
       <ConfirmDialog
         open={Boolean(deleting)}

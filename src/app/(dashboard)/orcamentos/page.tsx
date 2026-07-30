@@ -7,7 +7,9 @@ import * as React from "react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { MobileFab } from "@/components/shared/mobile-fab";
 import { PageHeader } from "@/components/shared/page-header";
+import { ResponsiveOverlay } from "@/components/shared/responsive-overlay";
 import { StatProgress } from "@/components/shared/stat-progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,12 +20,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -101,6 +97,7 @@ function BudgetsPageContent() {
         description="Limites mensais por categoria, com título e controle por unidade"
         actions={
           <Button
+            className="hidden md:inline-flex"
             onClick={() => {
               setEditing(null);
               setDialogOpen(true);
@@ -298,43 +295,46 @@ function BudgetsPageContent() {
         </div>
       )}
 
-      <Dialog
+      <MobileFab
+        label="Novo orçamento"
+        onClick={() => {
+          setEditing(null);
+          setDialogOpen(true);
+        }}
+      />
+
+      <ResponsiveOverlay
         open={dialogOpen}
         onOpenChange={(open) => {
           setDialogOpen(open);
           if (!open) setEditing(null);
         }}
+        title={editing ? "Editar orçamento" : "Novo orçamento"}
+        desktopClassName="max-h-[90vh] overflow-y-auto sm:max-w-lg"
       >
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {editing ? "Editar orçamento" : "Novo orçamento"}
-            </DialogTitle>
-          </DialogHeader>
-          <BudgetForm
-            key={editing?.id ?? `new-${month}-${year}`}
-            budget={
-              editing ??
-              ({
-                month,
-                year,
-                alertAt: 80,
-                limitAmount: 0,
-                categoryId: "",
-                title: null,
-                description: null,
-                unitCost: null,
-                quantityLimit: null,
-              } as Budget)
-            }
-            onCancel={() => {
-              setDialogOpen(false);
-              setEditing(null);
-            }}
-            onSubmit={handleSubmit}
-          />
-        </DialogContent>
-      </Dialog>
+        <BudgetForm
+          key={editing?.id ?? `new-${month}-${year}`}
+          budget={
+            editing ??
+            ({
+              month,
+              year,
+              alertAt: 80,
+              limitAmount: 0,
+              categoryId: "",
+              title: null,
+              description: null,
+              unitCost: null,
+              quantityLimit: null,
+            } as Budget)
+          }
+          onCancel={() => {
+            setDialogOpen(false);
+            setEditing(null);
+          }}
+          onSubmit={handleSubmit}
+        />
+      </ResponsiveOverlay>
 
       <ConfirmDialog
         open={Boolean(deleting)}

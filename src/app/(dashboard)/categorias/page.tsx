@@ -8,7 +8,9 @@ import * as React from "react";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { MobileFab } from "@/components/shared/mobile-fab";
 import { PageHeader } from "@/components/shared/page-header";
+import { ResponsiveOverlay } from "@/components/shared/responsive-overlay";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,12 +19,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -83,6 +79,7 @@ function CategoriesPageContent() {
         description="Organize receitas e despesas por categoria"
         actions={
           <Button
+            className="hidden md:inline-flex"
             onClick={() => {
               setEditing(null);
               setDialogOpen(true);
@@ -95,12 +92,14 @@ function CategoriesPageContent() {
       />
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-        <TabsList>
-          <TabsTrigger value="ALL">Todas</TabsTrigger>
-          <TabsTrigger value="INCOME">Receitas</TabsTrigger>
-          <TabsTrigger value="EXPENSE">Despesas</TabsTrigger>
-          <TabsTrigger value="TRANSFER">Transferências</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="inline-flex w-max min-w-full justify-start sm:w-auto">
+            <TabsTrigger value="ALL">Todas</TabsTrigger>
+            <TabsTrigger value="INCOME">Receitas</TabsTrigger>
+            <TabsTrigger value="EXPENSE">Despesas</TabsTrigger>
+            <TabsTrigger value="TRANSFER">Transferências</TabsTrigger>
+          </TabsList>
+        </div>
       </Tabs>
 
       {isLoading ? (
@@ -190,31 +189,33 @@ function CategoriesPageContent() {
         </div>
       )}
 
-      <Dialog
+      <MobileFab
+        label="Nova categoria"
+        onClick={() => {
+          setEditing(null);
+          setDialogOpen(true);
+        }}
+      />
+
+      <ResponsiveOverlay
         open={dialogOpen}
         onOpenChange={(open) => {
           setDialogOpen(open);
           if (!open) setEditing(null);
         }}
+        title={editing ? "Editar categoria" : "Nova categoria"}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editing ? "Editar categoria" : "Nova categoria"}
-            </DialogTitle>
-          </DialogHeader>
-          <CategoryForm
-            key={editing?.id ?? "new"}
-            category={editing}
-            defaultType={tab === "INCOME" ? "INCOME" : "EXPENSE"}
-            onCancel={() => {
-              setDialogOpen(false);
-              setEditing(null);
-            }}
-            onSubmit={handleSubmit}
-          />
-        </DialogContent>
-      </Dialog>
+        <CategoryForm
+          key={editing?.id ?? "new"}
+          category={editing}
+          defaultType={tab === "INCOME" ? "INCOME" : "EXPENSE"}
+          onCancel={() => {
+            setDialogOpen(false);
+            setEditing(null);
+          }}
+          onSubmit={handleSubmit}
+        />
+      </ResponsiveOverlay>
 
       <ConfirmDialog
         open={Boolean(deleting)}

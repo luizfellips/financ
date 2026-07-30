@@ -8,15 +8,11 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { EmptyState } from "@/components/shared/empty-state";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { MobileFab } from "@/components/shared/mobile-fab";
 import { PageHeader } from "@/components/shared/page-header";
+import { ResponsiveOverlay } from "@/components/shared/responsive-overlay";
 import { TransactionAmount } from "@/components/shared/transaction-amount";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,10 +24,12 @@ import {
   TransactionForm,
   type TransactionFormValues,
 } from "@/features/transactions/components/transaction-form";
+import { TransactionMobileCard } from "@/features/transactions/components/transaction-mobile-card";
 import {
   TransferForm,
   type TransferFormValues,
 } from "@/features/transactions/components/transfer-form";
+import { useIsMobile } from "@/hooks/use-media-query";
 import {
   useCreateIncome,
   useDeleteTransaction,
@@ -44,6 +42,7 @@ import { formatDate } from "@/utils/date";
 function IncomesPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isMobile = useIsMobile();
 
   const [filters, setFilters] = React.useState<TransactionFilters>({
     page: 1,
@@ -71,6 +70,16 @@ function IncomesPageContent() {
       router.replace("/receitas");
     }
   }, [searchParams, router]);
+
+  function openEdit(row: Transaction) {
+    setEditing(row);
+    setDialogOpen(true);
+  }
+
+  function openConvert(row: Transaction) {
+    setEditing(row);
+    setTransferOpen(true);
+  }
 
   const columns: DataTableColumn<Transaction>[] = [
     {
@@ -112,21 +121,11 @@ function IncomesPageContent() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() => {
-                setEditing(row);
-                setDialogOpen(true);
-              }}
-            >
+            <DropdownMenuItem onClick={() => openEdit(row)}>
               <Pencil className="mr-2 h-4 w-4" />
               Editar
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => {
-                setEditing(row);
-                setTransferOpen(true);
-              }}
-            >
+            <DropdownMenuItem onClick={() => openConvert(row)}>
               <ArrowLeftRight className="mr-2 h-4 w-4" />
               Converter em transferência
             </DropdownMenuItem>
@@ -165,6 +164,43 @@ function IncomesPageContent() {
   const items = data?.data ?? [];
   const meta = data?.meta;
 
+  const pagination =
+    meta && meta.totalPages > 1 ? (
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Página {meta.page} de {meta.totalPages}
+        </p>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={meta.page <= 1}
+            onClick={() =>
+              setFilters((p) => ({
+                ...p,
+                page: Math.max(1, meta.page - 1),
+              }))
+            }
+          >
+            Anterior
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={meta.page >= meta.totalPages}
+            onClick={() =>
+              setFilters((p) => ({
+                ...p,
+                page: Math.min(meta.totalPages, meta.page + 1),
+              }))
+            }
+          >
+            Próxima
+          </Button>
+        </div>
+      </div>
+    ) : null;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -172,6 +208,7 @@ function IncomesPageContent() {
         description="Entradas e ganhos registrados"
         actions={
           <Button
+            className="hidden md:inline-flex"
             onClick={() => {
               setEditing(null);
               setDialogOpen(true);
@@ -190,7 +227,7 @@ function IncomesPageContent() {
       />
 
       {isLoading ? (
-        <LoadingSkeleton variant="table" rows={8} />
+        <LoadingSkeleton variant={isMobile ? "list" : "table"} rows={8} />
       ) : items.length === 0 ? (
         <EmptyState
           title="Nenhuma receita encontrada"
@@ -202,90 +239,78 @@ function IncomesPageContent() {
             </Button>
           }
         />
+      ) : isMobile ? (
+        <>
+          <div className="flex flex-col gap-2">
+            {items.map((row) => (
+              <TransactionMobileCard
+                key={row.id}
+                transaction={row}
+                showTypeBadge={false}
+                onEdit={openEdit}
+                onDelete={setDeleting}
+                onConvertToTransfer={openConvert}
+              />
+            ))}
+          </div>
+          {pagination}
+        </>
       ) : (
         <>
           <DataTable columns={columns} data={items} getRowId={(r) => r.id} />
-          {meta && meta.totalPages > 1 ? (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Página {meta.page} de {meta.totalPages}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={meta.page <= 1}
-                  onClick={() =>
-                    setFilters((p) => ({ ...p, page: (p.page ?? 1) - 1 }))
-                  }
-                >
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={meta.page >= meta.totalPages}
-                  onClick={() =>
-                    setFilters((p) => ({ ...p, page: (p.page ?? 1) + 1 }))
-                  }
-                >
-                  Próxima
-                </Button>
-              </div>
-            </div>
-          ) : null}
+          {pagination}
         </>
       )}
 
-      <Dialog
+      <MobileFab
+        label="Nova receita"
+        onClick={() => {
+          setEditing(null);
+          setDialogOpen(true);
+        }}
+      />
+
+      <ResponsiveOverlay
         open={dialogOpen}
         onOpenChange={(open) => {
           setDialogOpen(open);
           if (!open) setEditing(null);
         }}
+        title={editing ? "Editar receita" : "Nova receita"}
+        desktopClassName="sm:max-w-3xl"
       >
-        <DialogContent className="sm:max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>
-              {editing ? "Editar receita" : "Nova receita"}
-            </DialogTitle>
-          </DialogHeader>
-          <TransactionForm
-            key={editing?.id ?? "new"}
-            lockedType="INCOME"
-            transaction={editing}
-            onCancel={() => {
-              setDialogOpen(false);
-              setEditing(null);
-            }}
-            onSubmit={handleSubmit}
-          />
-        </DialogContent>
-      </Dialog>
+        <TransactionForm
+          key={editing?.id ?? "new"}
+          lockedType="INCOME"
+          transaction={editing}
+          onCancel={() => {
+            setDialogOpen(false);
+            setEditing(null);
+          }}
+          onSubmit={handleSubmit}
+        />
+      </ResponsiveOverlay>
 
-      <Dialog
+      <ResponsiveOverlay
         open={transferOpen}
         onOpenChange={(open) => {
           setTransferOpen(open);
           if (!open) setEditing(null);
         }}
+        title="Converter em transferência"
+        desktopClassName="sm:max-w-lg"
       >
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Converter em transferência</DialogTitle>
-          </DialogHeader>
-          <TransferForm
-            key={editing?.id ?? "convert-income"}
-            transaction={editing}
-            onCancel={() => {
-              setTransferOpen(false);
-              setEditing(null);
-            }}
-            onSubmit={handleConvertSubmit}
-            submitLabel="Converter"
-          />
-        </DialogContent>
-      </Dialog>
+        <TransferForm
+          key={editing?.id ?? "convert-income"}
+          transaction={editing}
+          onCancel={() => {
+            setTransferOpen(false);
+            setEditing(null);
+          }}
+          onSubmit={handleConvertSubmit}
+          submitLabel="Converter"
+        />
+      </ResponsiveOverlay>
 
       <ConfirmDialog
         open={Boolean(deleting)}
