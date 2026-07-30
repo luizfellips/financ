@@ -47,11 +47,13 @@ export function StatProgress({
   return (
     <div className={cn("space-y-2", className)}>
       <div className="flex items-center justify-between gap-3 text-sm">
-        <span className="font-medium text-foreground">{label}</span>
+        <span className="min-w-0 truncate font-medium text-foreground">
+          {label}
+        </span>
         {showValues ? (
           <span
             className={cn(
-              "tabular-nums text-muted-foreground",
+              "shrink-0 tabular-nums text-muted-foreground",
               overBudget && "text-destructive",
             )}
           >

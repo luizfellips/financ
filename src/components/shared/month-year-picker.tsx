@@ -66,7 +66,7 @@ export function MonthYearPicker({
           onChange({ ...value, month: Number(month) })
         }
       >
-        <SelectTrigger className="w-[140px]">
+        <SelectTrigger className="w-[7.5rem] sm:w-[140px]">
           <SelectValue placeholder="Mês" />
         </SelectTrigger>
         <SelectContent>
@@ -81,7 +81,7 @@ export function MonthYearPicker({
         value={String(value.year)}
         onValueChange={(year) => onChange({ ...value, year: Number(year) })}
       >
-        <SelectTrigger className="w-[100px]">
+        <SelectTrigger className="w-[4.75rem] sm:w-[100px]">
           <SelectValue placeholder="Ano" />
         </SelectTrigger>
         <SelectContent>

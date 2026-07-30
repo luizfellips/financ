@@ -188,19 +188,19 @@ export default function DashboardPage() {
         />
       </motion.div>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
+      <Card className="min-w-0 overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
+          <div className="min-w-0">
             <CardTitle className="text-base">Saldos das contas</CardTitle>
-            <CardDescription>
+            <CardDescription className="truncate">
               Saldo até o fim de {monthLabel} e variação no mês
             </CardDescription>
           </div>
-          <Button asChild variant="ghost" size="sm">
+          <Button asChild variant="ghost" size="sm" className="shrink-0">
             <Link href="/contas">Gerenciar</Link>
           </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="min-w-0 px-4 sm:px-6">
           {accountBalances.length === 0 ? (
             <EmptyState
               className="border-0 py-8"
@@ -225,9 +225,9 @@ export default function DashboardPage() {
                 return (
                   <li
                     key={account.id}
-                    className="flex items-center justify-between gap-3 py-3"
+                    className="flex items-start justify-between gap-2 py-2.5"
                   >
-                    <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex min-w-0 flex-1 items-center gap-2.5">
                       <div
                         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
                         style={{
@@ -238,20 +238,20 @@ export default function DashboardPage() {
                         <Icon className="h-4 w-4" />
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex min-w-0 items-center gap-1.5">
                           <p className="truncate text-sm font-medium">
                             {account.name}
                           </p>
                           {account.isDefault ? (
                             <Badge
                               variant="secondary"
-                              className="text-[10px]"
+                              className="shrink-0 text-[10px]"
                             >
                               Padrão
                             </Badge>
                           ) : null}
                         </div>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="truncate text-xs text-muted-foreground">
                           {ACCOUNT_TYPE_LABELS[account.type]}
                         </p>
                       </div>
@@ -283,7 +283,7 @@ export default function DashboardPage() {
                           <TrendingDown className="h-3 w-3" />
                         ) : null}
                         {variationPositive ? "+" : ""}
-                        {formatCurrency(account.monthVariation)} no mês
+                        {formatCurrency(account.monthVariation)}
                       </p>
                     </div>
                   </li>
@@ -295,17 +295,17 @@ export default function DashboardPage() {
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
+        <Card className="min-w-0">
           <CardHeader className="flex flex-row items-center justify-between">
-            <div>
+            <div className="min-w-0">
               <CardTitle className="text-base">Orçamentos</CardTitle>
               <CardDescription>Progresso do mês atual</CardDescription>
             </div>
-            <Button asChild variant="ghost" size="sm">
+            <Button asChild variant="ghost" size="sm" className="shrink-0">
               <Link href="/orcamentos">Ver todos</Link>
             </Button>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="min-w-0 space-y-4">
             {budgetProgress.length === 0 ? (
               <EmptyState
                 className="border-0 py-8"
@@ -319,7 +319,7 @@ export default function DashboardPage() {
               />
             ) : (
               budgetProgress.slice(0, 5).map((budget) => (
-                <div key={budget.id} className="space-y-1">
+                <div key={budget.id} className="min-w-0 space-y-1">
                   <StatProgress
                     label={budget.title?.trim() || budget.categoryName}
                     current={budget.spent}
@@ -345,17 +345,17 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardHeader className="flex flex-row items-center justify-between">
-            <div>
+            <div className="min-w-0">
               <CardTitle className="text-base">Metas</CardTitle>
               <CardDescription>Progresso das suas metas</CardDescription>
             </div>
-            <Button asChild variant="ghost" size="sm">
+            <Button asChild variant="ghost" size="sm" className="shrink-0">
               <Link href="/metas">Ver todas</Link>
             </Button>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="min-w-0 space-y-4">
             {goalProgress.length === 0 ? (
               <EmptyState
                 className="border-0 py-8"
@@ -383,17 +383,19 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <div>
+        <Card className="min-w-0 overflow-hidden">
+          <CardHeader className="gap-2 space-y-0 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <CardTitle className="text-base">Próximas contas</CardTitle>
-              <CardDescription>Recorrências nos próximos 30 dias</CardDescription>
+              <CardDescription className="truncate">
+                Recorrências nos próximos 30 dias
+              </CardDescription>
             </div>
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/recorrencias">Materializar</Link>
+            <Button asChild variant="ghost" size="sm" className="shrink-0 self-start">
+              <Link href="/recorrencias">Ver</Link>
             </Button>
           </CardHeader>
-          <CardContent>
+          <CardContent className="min-w-0 px-4 sm:px-6">
             {upcomingBills.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">
                 Nenhuma conta recorrente prevista
@@ -403,15 +405,18 @@ export default function DashboardPage() {
                 {upcomingBills.map((bill, index) => (
                   <li
                     key={`${bill.title}-${bill.dueDate}-${index}`}
-                    className="flex items-center justify-between gap-3 py-3"
+                    className="flex items-start justify-between gap-2 py-2.5"
                   >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{bill.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(bill.dueDate)} · {bill.category.name}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium leading-tight">
+                        {bill.title}
+                      </p>
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                        {formatDate(bill.dueDate)}
+                        {bill.category?.name ? ` · ${bill.category.name}` : ""}
                       </p>
                     </div>
-                    <p className="shrink-0 text-sm font-medium tabular-nums text-destructive">
+                    <p className="shrink-0 pt-0.5 text-sm font-medium tabular-nums text-destructive">
                       {formatCurrency(bill.amount)}
                     </p>
                   </li>
@@ -421,17 +426,17 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <div>
+        <Card className="min-w-0 overflow-hidden">
+          <CardHeader className="gap-2 space-y-0 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <CardTitle className="text-base">Transações recentes</CardTitle>
               <CardDescription>Últimos lançamentos</CardDescription>
             </div>
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/transacoes">Ver todas</Link>
+            <Button asChild variant="ghost" size="sm" className="shrink-0 self-start">
+              <Link href="/transacoes">Ver</Link>
             </Button>
           </CardHeader>
-          <CardContent>
+          <CardContent className="min-w-0 px-4 sm:px-6">
             {recentTransactions.length === 0 ? (
               <EmptyState
                 className="border-0 py-8"
@@ -445,40 +450,36 @@ export default function DashboardPage() {
               />
             ) : (
               <ul className="divide-y divide-border">
-                {recentTransactions.map((tx) => (
-                  <li
-                    key={tx.id}
-                    className="flex items-center justify-between gap-3 py-3"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="truncate text-sm font-medium">{tx.title}</p>
-                        <Badge variant="secondary" className="text-[10px]">
-                          {tx.type === "INCOME"
-                            ? "Receita"
-                            : tx.type === "TRANSFER"
-                              ? "Transferência"
-                              : "Despesa"}
-                        </Badge>
+                {recentTransactions.map((tx) => {
+                  const meta =
+                    tx.type === "TRANSFER" &&
+                    tx.account &&
+                    tx.transferToAccount
+                      ? `${tx.account.name} → ${tx.transferToAccount.name}`
+                      : (tx.category?.name ?? null);
+
+                  return (
+                    <li
+                      key={tx.id}
+                      className="flex items-start justify-between gap-2 py-2.5"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium leading-tight">
+                          {tx.title}
+                        </p>
+                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                          {formatDate(tx.date)}
+                          {meta ? ` · ${meta}` : ""}
+                        </p>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(tx.date)}
-                        {tx.type === "TRANSFER" &&
-                        tx.account &&
-                        tx.transferToAccount
-                          ? ` · ${tx.account.name} → ${tx.transferToAccount.name}`
-                          : tx.category
-                            ? ` · ${tx.category.name}`
-                            : ""}
-                      </p>
-                    </div>
-                    <TransactionAmount
-                      type={tx.type}
-                      amount={tx.amount}
-                      className="w-auto shrink-0 text-sm"
-                    />
-                  </li>
-                ))}
+                      <TransactionAmount
+                        type={tx.type}
+                        amount={tx.amount}
+                        className="w-auto shrink-0 pt-0.5 text-sm"
+                      />
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </CardContent>
