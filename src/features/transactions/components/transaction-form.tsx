@@ -122,6 +122,7 @@ export function TransactionForm({
   });
 
   const type = form.watch("type");
+  const accountId = form.watch("accountId");
   const recurrence = form.watch("recurrence");
   const { data: categories = [] } = useCategories(lockedType ?? type);
 
@@ -140,6 +141,14 @@ export function TransactionForm({
       if (preferred) form.setValue("accountId", preferred.id);
     }
   }, [accounts, form]);
+
+  React.useEffect(() => {
+    if (!accountId || transaction) return;
+    const selected = accounts.find((a) => a.id === accountId);
+    if (selected?.type === "CREDIT") {
+      form.setValue("paymentMethod", "CREDIT_CARD");
+    }
+  }, [accountId, accounts, form, transaction]);
 
   async function handleSubmit(values: TransactionFormValues) {
     setPending(true);

@@ -6,11 +6,16 @@ import { accountRepository } from "@/server/repositories/account.repository";
 import { transactionRepository } from "@/server/repositories/transaction.repository";
 import { budgetService } from "@/server/services/budget.service";
 import { goalService } from "@/server/services/goal.service";
+import { getCreditInvoiceDebt } from "@/server/services/invoice.service";
 
 export type DashboardPeriod = {
   month?: number;
   year?: number;
 };
+
+function roundMoney(value: number) {
+  return Math.round(value * 100) / 100;
+}
 
 export const dashboardService = {
   async getOverview(userId: string, period: DashboardPeriod = {}) {
@@ -54,40 +59,7 @@ export const dashboardService = {
     }> = [];
 
     for (const account of accounts) {
-      const [
-        income,
-        expense,
-        transferOut,
-        transferIn,
-        monthIncome,
-        monthExpense,
-      ] = await Promise.all([
-        transactionRepository.sumByAccountAndType(
-          userId,
-          account.id,
-          "INCOME",
-          undefined,
-          end,
-        ),
-        transactionRepository.sumByAccountAndType(
-          userId,
-          account.id,
-          "EXPENSE",
-          undefined,
-          end,
-        ),
-        transactionRepository.sumTransfersOut(
-          userId,
-          account.id,
-          undefined,
-          end,
-        ),
-        transactionRepository.sumTransfersIn(
-          userId,
-          account.id,
-          undefined,
-          end,
-        ),
+      const [monthIncome, monthExpense] = await Promise.all([
         transactionRepository.sumByAccountAndType(
           userId,
           account.id,
@@ -103,17 +75,50 @@ export const dashboardService = {
           end,
         ),
       ]);
-      const balance =
-        Math.round(
-          (Number(account.initialBalance) +
+
+      let balance: number;
+      if (account.type === "CREDIT") {
+        const debt = await getCreditInvoiceDebt(userId, account.id, end);
+        balance = roundMoney(Number(account.initialBalance) - debt);
+      } else {
+        const [income, expense, transferOut, transferIn] = await Promise.all([
+          transactionRepository.sumByAccountAndType(
+            userId,
+            account.id,
+            "INCOME",
+            undefined,
+            end,
+          ),
+          transactionRepository.sumByAccountAndType(
+            userId,
+            account.id,
+            "EXPENSE",
+            undefined,
+            end,
+          ),
+          transactionRepository.sumTransfersOut(
+            userId,
+            account.id,
+            undefined,
+            end,
+          ),
+          transactionRepository.sumTransfersIn(
+            userId,
+            account.id,
+            undefined,
+            end,
+          ),
+        ]);
+        balance = roundMoney(
+          Number(account.initialBalance) +
             income -
             expense -
             transferOut +
-            transferIn) *
-            100,
-        ) / 100;
-      const monthVariation =
-        Math.round((monthIncome - monthExpense) * 100) / 100;
+            transferIn,
+        );
+      }
+
+      const monthVariation = roundMoney(monthIncome - monthExpense);
       totalBalance += balance;
       accountBalances.push({
         id: account.id,

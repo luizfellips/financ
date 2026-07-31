@@ -420,6 +420,42 @@ export const transactionRepository = {
     return result._sum.amount ? Number(result._sum.amount) : 0;
   },
 
+  async findTransfersToAccount(
+    userId: string,
+    accountId: string,
+    dateFrom: Date,
+    dateTo: Date,
+  ): Promise<TransactionWithRelations[]> {
+    return prisma.transaction.findMany({
+      where: {
+        userId,
+        transferToAccountId: accountId,
+        type: "TRANSFER",
+        date: { gte: dateFrom, lte: dateTo },
+      },
+      include: includeRelations,
+      orderBy: { date: "desc" },
+    });
+  },
+
+  async findExpensesByAccount(
+    userId: string,
+    accountId: string,
+    dateFrom: Date,
+    dateTo: Date,
+  ): Promise<TransactionWithRelations[]> {
+    return prisma.transaction.findMany({
+      where: {
+        userId,
+        accountId,
+        type: "EXPENSE",
+        date: { gte: dateFrom, lte: dateTo },
+      },
+      include: includeRelations,
+      orderBy: { date: "desc" },
+    });
+  },
+
   async sumByCategory(
     userId: string,
     categoryId: string,

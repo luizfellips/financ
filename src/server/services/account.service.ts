@@ -6,6 +6,10 @@ import {
 } from "@/server/errors/app-error";
 import { accountRepository } from "@/server/repositories/account.repository";
 import { transactionRepository } from "@/server/repositories/transaction.repository";
+import {
+  getCreditInvoiceDebt,
+  invoiceService,
+} from "@/server/services/invoice.service";
 import { getCurrentMonthYear, getMonthRange } from "@/utils/date";
 import type { z } from "zod";
 import type { accountSchema } from "@/server/validation/schemas";
@@ -26,49 +30,75 @@ function resolvePeriod(month?: number, year?: number) {
   return { year: resolvedYear, month: resolvedMonth, start, end };
 }
 
+function roundMoney(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
 async function withBalance(
   userId: string,
   account: Awaited<ReturnType<typeof accountRepository.findById>> & object,
-  asOf: Date,
+  period: { year: number; month: number; end: Date },
 ) {
+  const mapped = mapAccount(account!);
+
+  if (account!.type === "CREDIT") {
+    const debt = await getCreditInvoiceDebt(
+      userId,
+      account!.id,
+      period.end,
+    );
+    return {
+      ...mapped,
+      balance: roundMoney(mapped.initialBalance - debt),
+    };
+  }
+
   const [income, expense, transferOut, transferIn] = await Promise.all([
     transactionRepository.sumByAccountAndType(
       userId,
       account!.id,
       "INCOME",
       undefined,
-      asOf,
+      period.end,
     ),
     transactionRepository.sumByAccountAndType(
       userId,
       account!.id,
       "EXPENSE",
       undefined,
-      asOf,
+      period.end,
     ),
-    transactionRepository.sumTransfersOut(userId, account!.id, undefined, asOf),
-    transactionRepository.sumTransfersIn(userId, account!.id, undefined, asOf),
+    transactionRepository.sumTransfersOut(
+      userId,
+      account!.id,
+      undefined,
+      period.end,
+    ),
+    transactionRepository.sumTransfersIn(
+      userId,
+      account!.id,
+      undefined,
+      period.end,
+    ),
   ]);
-  const mapped = mapAccount(account!);
+
   return {
     ...mapped,
-    balance:
-      Math.round(
-        (mapped.initialBalance + income - expense - transferOut + transferIn) *
-          100,
-      ) / 100,
+    balance: roundMoney(
+      mapped.initialBalance + income - expense - transferOut + transferIn,
+    ),
   };
 }
 
 export const accountService = {
   async list(userId: string, options: AccountListOptions = {}) {
     const { includeArchived = false, month, year } = options;
-    const { end } = resolvePeriod(month, year);
+    const period = resolvePeriod(month, year);
     const accounts = await accountRepository.findManyByUser(userId, {
       includeArchived,
     });
     return Promise.all(
-      accounts.map((account) => withBalance(userId, account, end)),
+      accounts.map((account) => withBalance(userId, account, period)),
     );
   },
 
@@ -81,8 +111,8 @@ export const accountService = {
     if (!account) {
       throw new NotFoundError("Conta não encontrada");
     }
-    const { end } = resolvePeriod(options.month, options.year);
-    return withBalance(userId, account, end);
+    const period = resolvePeriod(options.month, options.year);
+    return withBalance(userId, account, period);
   },
 
   async create(userId: string, input: AccountInput) {
@@ -95,6 +125,17 @@ export const accountService = {
       icon: input.icon,
       isDefault: input.isDefault ?? false,
     });
+
+    if (input.type === "CREDIT") {
+      const opening = input.invoiceOpeningAmount ?? 0;
+      await invoiceService.ensureOpeningForNewAccount(
+        userId,
+        account.id,
+        opening,
+      );
+      const period = resolvePeriod();
+      return withBalance(userId, account, period);
+    }
 
     return {
       ...mapAccount(account),
@@ -125,8 +166,19 @@ export const accountService = {
       ...(input.archived !== undefined ? { archived: input.archived } : {}),
     });
 
-    const { end } = resolvePeriod();
-    return withBalance(userId, account, end);
+    if (
+      (input.type === "CREDIT" || account.type === "CREDIT") &&
+      input.invoiceOpeningAmount !== undefined
+    ) {
+      await invoiceService.ensureOpeningForNewAccount(
+        userId,
+        account.id,
+        input.invoiceOpeningAmount,
+      );
+    }
+
+    const period = resolvePeriod();
+    return withBalance(userId, account, period);
   },
 
   async delete(userId: string, id: string) {

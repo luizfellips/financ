@@ -46,6 +46,7 @@ const schema = z.object({
     "OTHER",
   ]),
   initialBalance: z.number().finite("Saldo inválido"),
+  invoiceOpeningAmount: z.number().finite().min(0).optional(),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
   icon: z.string().min(1).max(40),
   isDefault: z.boolean(),
@@ -85,6 +86,7 @@ export function AccountForm({
       name: account?.name ?? "",
       type: account?.type ?? "CHECKING",
       initialBalance: account?.initialBalance ?? 0,
+      invoiceOpeningAmount: 0,
       color: account?.color ?? CATEGORY_COLORS[0],
       icon: account?.icon ?? "Wallet",
       isDefault: account?.isDefault ?? false,
@@ -93,6 +95,7 @@ export function AccountForm({
 
   const color = form.watch("color");
   const icon = form.watch("icon");
+  const accountType = form.watch("type");
 
   async function handleSubmit(values: AccountFormValues) {
     setPending(true);
@@ -165,7 +168,11 @@ export function AccountForm({
           render={({ field }) => (
             <FormItem className="sm:max-w-xs">
               <FormLabel>
-                {account ? "Saldo inicial" : "Saldo atual"}
+                {accountType === "CREDIT"
+                  ? "Saldo base da conta"
+                  : account
+                    ? "Saldo inicial"
+                    : "Saldo atual"}
               </FormLabel>
               <FormControl>
                 <MoneyInput
@@ -175,15 +182,38 @@ export function AccountForm({
                 />
               </FormControl>
               <FormDescription>
-                {account
-                  ? "Base do saldo. O saldo do mês = inicial + receitas − despesas até o fim do período."
-                  : "Informe o saldo que a conta tem hoje."}
+                {accountType === "CREDIT"
+                  ? "Em geral deixe 0. O saldo exibido = base − fatura do mês."
+                  : account
+                    ? "Base do saldo. O saldo do mês = inicial + receitas − despesas até o fim do período."
+                    : "Informe o saldo que a conta tem hoje."}
               </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
 
+        {accountType === "CREDIT" && !account ? (
+          <FormField
+            control={form.control}
+            name="invoiceOpeningAmount"
+            render={({ field }) => (
+              <FormItem className="sm:max-w-xs">
+                <FormLabel>Valor inicial da fatura (mês atual)</FormLabel>
+                <FormControl>
+                  <MoneyInput
+                    value={field.value ?? 0}
+                    onValueChange={field.onChange}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Dívida já existente neste cartão ao começar o acompanhamento.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ) : null}
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
             control={form.control}

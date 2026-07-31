@@ -316,6 +316,28 @@ export type ReportsData = {
   };
 };
 
+export type CreditInvoiceSummary = {
+  id: string;
+  accountId: string;
+  accountName: string;
+  accountColor: string;
+  accountIcon: string;
+  year: number;
+  month: number;
+  notes: string | null;
+  openingAmount: number;
+  expenses: number;
+  payments: number;
+  total: number;
+  balance: number;
+};
+
+export type CreditInvoiceDetail = CreditInvoiceSummary & {
+  accountInitialBalance: number;
+  expensesList: Transaction[];
+  paymentsList: Transaction[];
+};
+
 export type Paginated<T> = {
   data: T[];
   meta: PaginationMeta;

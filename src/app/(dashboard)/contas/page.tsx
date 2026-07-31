@@ -1,7 +1,15 @@
 "use client";
 
 import * as LucideIcons from "lucide-react";
-import { Archive, MoreHorizontal, Pencil, Plus, Star } from "lucide-react";
+import {
+  Archive,
+  CreditCard,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Star,
+} from "lucide-react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
 
@@ -186,6 +194,14 @@ function AccountsPageContent() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      {account.type === "CREDIT" ? (
+                        <DropdownMenuItem asChild>
+                          <Link href={`/faturas?conta=${account.id}`}>
+                            <CreditCard className="mr-2 h-4 w-4" />
+                            Ver fatura
+                          </Link>
+                        </DropdownMenuItem>
+                      ) : null}
                       <DropdownMenuItem
                         onClick={() => {
                           setEditing(account);

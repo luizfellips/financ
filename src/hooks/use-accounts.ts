@@ -33,6 +33,7 @@ type AccountInput = {
   type: AccountType;
   currency?: string;
   initialBalance: number;
+  invoiceOpeningAmount?: number;
   color?: string;
   icon?: string;
   isDefault?: boolean;

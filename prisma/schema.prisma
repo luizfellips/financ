@@ -74,6 +74,7 @@ model User {
   sessions                   Session[]
   authAccounts               AuthAccount[]
   recurringProposalDecisions RecurringProposalDecision[]
+  creditInvoices             CreditInvoice[]
 
   @@index([email])
 }
@@ -130,9 +131,10 @@ model Account {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
-  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions       Transaction[] @relation("TransactionAccount")
-  incomingTransfers  Transaction[] @relation("TransferToAccount")
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions       Transaction[]   @relation("TransactionAccount")
+  incomingTransfers  Transaction[]   @relation("TransferToAccount")
+  creditInvoices     CreditInvoice[]
 
   @@index([userId])
   @@index([userId, isDefault])
@@ -191,6 +193,25 @@ model Transaction {
   @@index([userId, isRecurring])
   @@index([installmentGroupId])
   @@index([title])
+}
+
+model CreditInvoice {
+  id            String   @id @default(cuid())
+  userId        String
+  accountId     String
+  year          Int
+  month         Int
+  openingAmount Decimal  @default(0) @db.Decimal(14, 2)
+  notes         String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, year, month])
+  @@index([userId, year, month])
+  @@index([accountId])
 }
 
 model Budget {

@@ -3,6 +3,7 @@
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  CreditCard,
   FolderTree,
   LayoutDashboard,
   PiggyBank,
@@ -27,6 +28,7 @@ import { useUiStore } from "@/stores/ui-store";
 
 const NAV_COMMANDS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/faturas", label: "Faturas", icon: CreditCard },
   { href: "/transacoes", label: "Transações", icon: Receipt },
   { href: "/receitas", label: "Receitas", icon: ArrowUpRight },
   { href: "/despesas", label: "Despesas", icon: ArrowDownLeft },

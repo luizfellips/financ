@@ -53,6 +53,8 @@ export const accountSchema = z.object({
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).default("#6366f1"),
   icon: z.string().min(1).max(40).default("Wallet"),
   isDefault: z.boolean().optional().default(false),
+  /** Opening amount for current-month credit invoice (CREDIT accounts only). */
+  invoiceOpeningAmount: z.coerce.number().finite().min(0).optional(),
 });
 
 export const categorySchema = z.object({
@@ -219,6 +221,23 @@ export const transactionFilterSchema = paginationSchema.extend({
 });
 
 export const periodQuerySchema = z.object({
+  month: z.coerce.number().int().min(1).max(12).optional(),
+  year: z.coerce.number().int().min(2000).max(2100).optional(),
+});
+
+export const invoiceUpdateSchema = z.object({
+  month: z.coerce.number().int().min(1).max(12).optional(),
+  year: z.coerce.number().int().min(2000).max(2100).optional(),
+  openingAmount: z.coerce.number().finite().min(0),
+  notes: z.string().max(2000).optional().nullable(),
+});
+
+export const invoicePaySchema = z.object({
+  fromAccountId: z.string().cuid(),
+  amount: z.coerce.number().positive().finite(),
+  date: calendarDateSchema.optional(),
+  title: z.string().trim().min(2).max(120).optional(),
+  notes: z.string().max(2000).optional().nullable(),
   month: z.coerce.number().int().min(1).max(12).optional(),
   year: z.coerce.number().int().min(2000).max(2100).optional(),
 });
