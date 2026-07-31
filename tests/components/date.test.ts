@@ -2,18 +2,32 @@ import { describe, expect, it } from "vitest";
 import {
   formatDate,
   getMonthRange,
+  getYearRange,
   previousMonths,
   toIsoDateOnly,
   toUtcDateOnly,
 } from "@/utils/date";
 
 describe("date utils", () => {
-  it("returns month range boundaries", () => {
+  it("returns month range boundaries in UTC", () => {
     const range = getMonthRange(2026, 7);
-    expect(range.start.getFullYear()).toBe(2026);
-    expect(range.start.getMonth()).toBe(6);
-    expect(range.start.getDate()).toBe(1);
-    expect(range.end.getMonth()).toBe(6);
+    expect(range.start.toISOString()).toBe("2026-07-01T00:00:00.000Z");
+    expect(range.end.toISOString()).toBe("2026-07-31T23:59:59.999Z");
+  });
+
+  it("covers transactions stored at UTC noon on the month edges", () => {
+    const { start, end } = getMonthRange(2026, 7);
+    const firstDay = new Date("2026-07-01T12:00:00.000Z");
+    const lastDay = new Date("2026-07-31T12:00:00.000Z");
+    expect(firstDay >= start && firstDay <= end).toBe(true);
+    expect(lastDay >= start && lastDay <= end).toBe(true);
+    expect(new Date("2026-08-01T00:00:00.000Z") <= end).toBe(false);
+  });
+
+  it("returns year range boundaries in UTC", () => {
+    const range = getYearRange(2026);
+    expect(range.start.toISOString()).toBe("2026-01-01T00:00:00.000Z");
+    expect(range.end.toISOString()).toBe("2026-12-31T23:59:59.999Z");
   });
 
   it("builds previous months list", () => {

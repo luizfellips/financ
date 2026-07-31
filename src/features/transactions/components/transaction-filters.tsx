@@ -75,6 +75,7 @@ function SelectFilters({
   compact?: boolean;
 }) {
   const triggerClass = compact ? "h-10" : undefined;
+  const currentYear = years[0];
 
   return (
     <>
@@ -128,9 +129,14 @@ function SelectFilters({
       <Select
         value={value.month ? String(value.month) : "all"}
         onValueChange={(month) =>
-          patch({
-            month: month === "all" ? undefined : Number(month),
-          })
+          patch(
+            month === "all"
+              ? { month: undefined }
+              : {
+                  month: Number(month),
+                  year: value.year ?? currentYear,
+                },
+          )
         }
       >
         <SelectTrigger className={triggerClass}>
@@ -149,9 +155,11 @@ function SelectFilters({
       <Select
         value={value.year ? String(value.year) : "all"}
         onValueChange={(year) =>
-          patch({
-            year: year === "all" ? undefined : Number(year),
-          })
+          patch(
+            year === "all"
+              ? { year: undefined, month: undefined }
+              : { year: Number(year) },
+          )
         }
       >
         <SelectTrigger className={triggerClass}>
@@ -300,7 +308,7 @@ function buildChips(
     chips.push({
       key: "year",
       label: String(value.year),
-      onRemove: () => patch({ year: undefined }),
+      onRemove: () => patch({ year: undefined, month: undefined }),
     });
   }
 

@@ -1,11 +1,4 @@
-import {
-  addMonths,
-  endOfMonth,
-  format,
-  parseISO,
-  startOfMonth,
-  subMonths,
-} from "date-fns";
+import { addMonths, format, parseISO, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 /** Calendar day from a Date stored as UTC (avoids local TZ shifting the day). */
@@ -40,11 +33,22 @@ export function formatMonthYear(date: Date | string): string {
   return format(value, "MMMM yyyy", { locale: ptBR });
 }
 
+/**
+ * Month boundaries in UTC, matching how transaction dates are stored
+ * (calendar days persisted as UTC noon). A local-time range would shift the
+ * boundaries and drop/include the edge days depending on the server timezone.
+ */
 export function getMonthRange(year: number, month: number) {
-  const base = new Date(year, month - 1, 1);
   return {
-    start: startOfMonth(base),
-    end: endOfMonth(base),
+    start: new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0)),
+    end: new Date(Date.UTC(year, month, 0, 23, 59, 59, 999)),
+  };
+}
+
+export function getYearRange(year: number) {
+  return {
+    start: new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0)),
+    end: new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999)),
   };
 }
 

@@ -2,7 +2,7 @@ import { mapTransaction, toDecimal } from "@/server/dto/mappers";
 import { ValidationError } from "@/server/errors/app-error";
 import { recurringDecisionRepository } from "@/server/repositories/recurring-decision.repository";
 import { transactionRepository } from "@/server/repositories/transaction.repository";
-import { getCurrentMonthYear, toUtcDateOnly } from "@/utils/date";
+import { getCurrentMonthYear, getMonthRange, toUtcDateOnly } from "@/utils/date";
 import {
   buildProposalId,
   buildRecurringSeriesKey,
@@ -36,12 +36,6 @@ export type RecurringProposal = {
   };
   lastOccurrenceDate: string;
 };
-
-function utcMonthRange(year: number, month: number) {
-  const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
-  const end = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
-  return { start, end };
-}
 
 function parseProposedDate(dateOnly: string): Date {
   return new Date(`${dateOnly}T12:00:00.000Z`);
@@ -81,7 +75,7 @@ export const recurringService = {
     const current = getCurrentMonthYear();
     const month = period.month ?? current.month;
     const year = period.year ?? current.year;
-    const { start, end } = utcMonthRange(year, month);
+    const { start, end } = getMonthRange(year, month);
 
     const [recurring, decisions] = await Promise.all([
       transactionRepository.findRecurring(userId),

@@ -7,6 +7,7 @@ import type {
 } from "@prisma/client";
 import type { Decimal } from "@prisma/client/runtime/library";
 import { prisma } from "@/lib/prisma";
+import { getCurrentMonthYear, getMonthRange, getYearRange } from "@/utils/date";
 
 export type TransactionWithRelations = Transaction & {
   account: { id: string; name: string; color: string; icon: string };
@@ -106,13 +107,13 @@ function buildWhere(
     ];
   }
 
-  if (filters.month && filters.year) {
-    const start = new Date(filters.year, filters.month - 1, 1);
-    const end = new Date(filters.year, filters.month, 0, 23, 59, 59, 999);
+  if (filters.month) {
+    // A month with no year selected applies to the current year.
+    const year = filters.year ?? getCurrentMonthYear().year;
+    const { start, end } = getMonthRange(year, filters.month);
     where.date = { gte: start, lte: end };
-  } else if (filters.year && !filters.month) {
-    const start = new Date(filters.year, 0, 1);
-    const end = new Date(filters.year, 11, 31, 23, 59, 59, 999);
+  } else if (filters.year) {
+    const { start, end } = getYearRange(filters.year);
     where.date = { gte: start, lte: end };
   } else if (filters.dateFrom || filters.dateTo) {
     where.date = {
